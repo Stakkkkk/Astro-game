@@ -35,10 +35,11 @@
 - [x] Сравнить Cloudflare Workers/Durable Objects и Node.js-хостинг.
 - [x] Выбрать схему деплоя.
 - [x] Описать план публичного веб-деплоя.
-- [ ] Подготовить клиент к production WebSocket URL.
-- [ ] Вынести game core из Node-сервера.
-- [ ] Создать Cloudflare Worker adapter.
-- [ ] Подключить Durable Object для комнат.
-- [ ] Опубликовать клиент.
-- [ ] Опубликовать сервер.
+- [x] Подготовить клиент к production WebSocket URL.
+- [x] Вынести game core из Node-сервера.
+- [x] Создать Cloudflare Worker adapter.
+- [x] Подключить Durable Object для комнат.
+- [x] Опубликовать клиент во временный Cloudflare Worker Static Assets preview.
+- [x] Опубликовать сервер во временный Cloudflare Worker preview.
 - [ ] Проверить подключение с двух устройств.
+- [ ] Перевести временный preview в постоянный Cloudflare deploy через `wrangler login` или `CLOUDFLARE_API_TOKEN`.

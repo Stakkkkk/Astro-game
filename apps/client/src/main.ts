@@ -145,8 +145,7 @@ setInterval(() => {
 }, 1_000);
 
 function connect(nickname: string, roomId: string): void {
-  const url = new URL(window.location.href);
-  const serverUrl = url.searchParams.get("server") ?? `ws://${window.location.hostname}:8787`;
+  const serverUrl = resolveWebSocketUrl(roomId);
 
   state.socket?.close();
   state.connected = false;
@@ -180,6 +179,20 @@ function connect(nickname: string, roomId: string): void {
   socket.addEventListener("error", () => {
     statusLine.textContent = "Не удалось подключиться к серверу";
   });
+}
+
+function resolveWebSocketUrl(roomId: string): string {
+  const pageUrl = new URL(window.location.href);
+  const configured = import.meta.env.VITE_WS_URL;
+  const fallback = window.location.protocol === "https:" ? "/ws" : `ws://${window.location.hostname}:8787`;
+  const base = pageUrl.searchParams.get("server") ?? (configured && configured.trim() ? configured : fallback);
+  const wsUrl = new URL(base, window.location.href);
+
+  if (wsUrl.protocol === "http:") wsUrl.protocol = "ws:";
+  if (wsUrl.protocol === "https:") wsUrl.protocol = "wss:";
+
+  wsUrl.searchParams.set("room", roomId);
+  return wsUrl.toString();
 }
 
 function handleServerMessage(message: ServerMessage): void {

@@ -4,27 +4,31 @@ import WebSocket from "ws";
 const port = Number(process.env.SMOKE_PORT ?? 8797);
 const roomId = "smoke";
 const env = Object.fromEntries(Object.entries(process.env).filter((entry) => entry[1] !== undefined));
-const server = spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "apps/server/src/index.ts"], {
-  env: {
-    ...env,
-    PORT: String(port)
-  },
-  stdio: ["ignore", "pipe", "pipe"]
-});
+const externalWsUrl = process.env.SMOKE_WS_URL;
+const localWsUrl = `ws://localhost:${port}`;
+const server = externalWsUrl
+  ? undefined
+  : spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "apps/server/src/index.ts"], {
+      env: {
+        ...env,
+        PORT: String(port)
+      },
+      stdio: ["ignore", "pipe", "pipe"]
+    });
 
 let stdout = "";
 let stderr = "";
 
-server.stdout.on("data", (chunk) => {
+server?.stdout.on("data", (chunk) => {
   stdout += chunk.toString("utf8");
 });
 
-server.stderr.on("data", (chunk) => {
+server?.stderr.on("data", (chunk) => {
   stderr += chunk.toString("utf8");
 });
 
 try {
-  await waitFor(() => stdout.includes(`ws://localhost:${port}`), 10_000, "server ready");
+  if (server) await waitFor(() => stdout.includes(`ws://localhost:${port}`), 10_000, "server ready");
   const first = await connectClient("Smoke A");
   const second = await connectClient("Smoke B");
 
@@ -47,11 +51,11 @@ try {
   second.ws.close();
   console.log("smoke:ws ok");
 } finally {
-  server.kill("SIGTERM");
+  server?.kill("SIGTERM");
 }
 
 async function connectClient(nickname) {
-  const ws = new WebSocket(`ws://localhost:${port}`);
+  const ws = new WebSocket(makeWsUrl(externalWsUrl ?? localWsUrl, roomId));
   const client = {
     ws,
     playerId: undefined,
@@ -72,6 +76,12 @@ async function connectClient(nickname) {
   ws.send(JSON.stringify({ type: "joinRoom", roomId, nickname }));
   await waitFor(() => Boolean(client.playerId) && Boolean(client.snapshot), 10_000, `${nickname} joined`);
   return client;
+}
+
+function makeWsUrl(base, roomId) {
+  const url = new URL(base);
+  url.searchParams.set("room", roomId);
+  return url.toString();
 }
 
 function input(overrides = {}) {

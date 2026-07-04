@@ -21,6 +21,15 @@ npm run dev
 - клиент: `http://localhost:5174`;
 - WebSocket-сервер: `ws://localhost:8787`.
 
+Полезные проверки:
+
+```bash
+npm run check
+npm run build
+npm run smoke:ws
+npm run smoke:worker
+```
+
 Проверка MVP:
 
 1. Открой `http://localhost:5174` в двух вкладках.
@@ -44,12 +53,31 @@ npm run dev
 ```text
 apps/
   client/   # браузерный клиент
-  server/   # авторитетный WebSocket-сервер
+  server/   # локальный Node.js WebSocket-adapter
+  worker/   # Cloudflare Worker + Durable Object + static assets
 packages/
+  game-core/ # общая серверная логика комнаты
   shared/   # общие типы, протокол, константы и математика
 docs/
   decisions/
 ```
+
+## Публичный запуск
+
+Текущий публичный preview развернут как единый Cloudflare Worker со Static Assets и Durable Object комнатами:
+
+- сайт: `https://astro-game-worker.spangle-roarer.workers.dev/`;
+- health endpoint: `https://astro-game-worker.spangle-roarer.workers.dev/health`;
+- WebSocket endpoint: `wss://astro-game-worker.spangle-roarer.workers.dev/ws`.
+
+Preview создан через временный аккаунт Wrangler (`wrangler deploy --temporary`) и живет как проверочный публичный стенд. Для постоянного деплоя нужно выполнить `wrangler login` или передать `CLOUDFLARE_API_TOKEN`, затем запустить:
+
+```bash
+npm run build
+npm run deploy:worker
+```
+
+Cloudflare Pages остается возможным вариантом для отдельного статического клиента, но текущий рабочий путь проще: Worker отдает и клиент, и `/ws` с одного домена.
 
 ## Документация
 

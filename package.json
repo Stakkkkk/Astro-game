@@ -11,15 +11,22 @@
     "dev": "node scripts/dev.mjs",
     "dev:client": "npm --workspace @astro-game/client run dev",
     "dev:server": "npm --workspace @astro-game/server run dev",
+    "dev:worker": "npm --workspace @astro-game/worker run dev",
+    "predeploy:worker": "npm run build",
+    "deploy:worker": "npm --workspace @astro-game/worker run deploy",
     "smoke:ws": "node scripts/smoke-ws.mjs",
+    "presmoke:worker": "npm --workspace @astro-game/client run build",
+    "smoke:worker": "node scripts/smoke-worker-local.mjs",
     "check": "npm run check --workspaces",
     "build": "npm run build --workspaces"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260701.1",
     "@types/node": "^26.1.0",
     "@types/ws": "^8.18.1",
     "tsx": "^4.23.0",
     "typescript": "^6.0.3",
-    "vite": "^8.1.3"
+    "vite": "^8.1.3",
+    "wrangler": "^4.107.0"
   }
 }

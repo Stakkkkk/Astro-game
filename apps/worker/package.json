@@ -1,17 +1,16 @@
 {
-  "name": "@astro-game/server",
+  "name": "@astro-game/worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "dev": "wrangler dev --config wrangler.jsonc --port 8788",
+    "deploy": "wrangler deploy --config wrangler.jsonc",
     "check": "tsc --noEmit",
     "build": "tsc --noEmit"
   },
   "dependencies": {
     "@astro-game/game-core": "0.1.0",
-    "@astro-game/shared": "0.1.0",
-    "ws": "^8.21.0"
+    "@astro-game/shared": "0.1.0"
   }
 }

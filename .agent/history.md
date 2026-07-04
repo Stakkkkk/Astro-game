@@ -279,6 +279,63 @@
 
 - Нужно закоммитить и отправить изменения в `origin/main`.
 
+## 2026-07-04 13:33:17 +07:00
+
+### Что изменено
+
+- Вынесена общая серверная игровая логика в `packages/game-core`.
+- `apps/server` превращен в локальный Node.js adapter поверх `RoomEngine`.
+- Добавлен `apps/worker`: Cloudflare Worker adapter с Durable Object `GameRoom`.
+- `apps/worker/wrangler.jsonc` настроен на Durable Object binding и Workers Static Assets из `apps/client/dist`.
+- Клиент научился выбирать WebSocket URL для production: query `server`, затем `VITE_WS_URL`, затем same-origin `/ws` для HTTPS или локальный `ws://localhost:8787` для dev.
+- Smoke-тест `scripts/smoke-ws.mjs` научился проверять внешний WebSocket через `SMOKE_WS_URL`.
+- Добавлен `scripts/smoke-worker-local.mjs` и npm-скрипт `smoke:worker` для локального `wrangler dev` smoke.
+- Документация обновлена под фактический публичный путь: единый Cloudflare Worker со Static Assets + Durable Objects.
+
+### Зачем
+
+- Выполнить этап “реальный веб” без ожидания отдельной инфраструктуры.
+- Сохранить локальный Node.js сервер как простой учебный adapter, но не дублировать игровую логику между Node и Cloudflare.
+- Получить публичный URL, который можно открыть с другого устройства и который использует настоящий `wss://` endpoint.
+
+### Затронутые файлы и каталоги
+
+- `README.md`
+- `package.json`
+- `package-lock.json`
+- `apps/client/src/main.ts`
+- `apps/server/package.json`
+- `apps/server/src/index.ts`
+- `apps/worker/`
+- `packages/game-core/`
+- `scripts/smoke-ws.mjs`
+- `scripts/smoke-worker-local.mjs`
+- `docs/deployment-plan.md`
+- `docs/roadmap.md`
+- `docs/decisions/ADR-003-public-web-deployment.md`
+- `.agent/context.md`
+- `.agent/history.md`
+- `.agent/case_non_it_game.md`
+
+### Проверка
+
+- `npm.cmd install` обновил workspaces и lockfile.
+- `npm.cmd run check` прошел по всем workspace.
+- `npm.cmd run build` прошел, Vite собрал production client.
+- `npm.cmd run smoke:ws` прошел на локальном Node adapter.
+- `npm.cmd run smoke:worker` прошел на локальном `wrangler dev` Worker + Durable Object.
+- `npx.cmd wrangler whoami` показал отсутствие постоянной авторизации.
+- `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary` опубликовал preview `https://astro-game-worker.spangle-roarer.workers.dev/`.
+- `Invoke-WebRequest https://astro-game-worker.spangle-roarer.workers.dev/` вернул production HTML клиента.
+- `Invoke-WebRequest https://astro-game-worker.spangle-roarer.workers.dev/health` вернул `{"name":"astro-game-worker","status":"ok","tickRate":20}`.
+- Удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.spangle-roarer.workers.dev/ws` прошел.
+
+### Что осталось нерешенным
+
+- Временный Cloudflare preview нужно перевести в постоянный deploy через `wrangler login` или `CLOUDFLARE_API_TOKEN`.
+- Нужно проверить публичный URL вручную с двух физических устройств.
+- Нужно закоммитить и отправить изменения в `origin/main`.
+
 ## 2026-07-04 12:29:12 +07:00
 
 ### Что изменено

@@ -10,6 +10,7 @@ venv/
 # Dependencies and caches
 node_modules/
 dist/
+.wrangler/
 .cache/
 .tmp/
 tmp/

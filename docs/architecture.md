@@ -6,7 +6,9 @@
 
 ```text
 apps/client    Browser + Canvas 2D + Vite
-apps/server    Node.js + ws + authoritative game loop
+apps/server    Local Node.js + ws adapter
+apps/worker    Cloudflare Worker + Durable Object + Static Assets
+packages/game-core Shared authoritative room engine
 packages/shared Protocol, DTO, constants, math helpers
 ```
 

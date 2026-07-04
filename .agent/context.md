@@ -44,7 +44,10 @@
 - Субагентские правила хранить в `.agent/subagents/`; актуализатор плана запускается после проработки вопросов по плану, архитектор-ревьюер только по явному запросу, тестировщик после правок.
 - Цвет игрока назначает сервер при входе в комнату; клиент использует этот цвет для корабля, scoreboard и стрелки-указателя.
 - Мир сделан условно бесконечным через большой тороидальный размер и поток астероидов вокруг активных игроков.
-- Целевой публичный деплой: Cloudflare Pages для клиента и Cloudflare Workers + Durable Objects для WebSocket-комнат после выделения game core из Node adapter.
+- Целевой публичный деплой уточнен: первый рабочий публичный путь — единый Cloudflare Worker со Static Assets для Vite-клиента и Durable Objects для WebSocket-комнат; Cloudflare Pages остается альтернативой после постоянной авторизации.
+- Game core вынесен в `packages/game-core`, Node.js сервер стал локальным adapter, Cloudflare Worker стал production adapter.
+- Временный Cloudflare preview опубликован командой `wrangler deploy --temporary`: `https://astro-game-worker.spangle-roarer.workers.dev/`.
+- Wrangler `whoami` показал отсутствие постоянной авторизации; для постоянного деплоя нужен `wrangler login` или `CLOUDFLARE_API_TOKEN`.
 
 ## Текущее состояние
 
@@ -57,6 +60,7 @@
 - Safety-kit: `C:\PetProjects\Astro-game\.agent-io-safety`.
 - История: `C:\PetProjects\Astro-game\.agent\history.md`.
 - Кейс: `C:\PetProjects\Astro-game\.agent\case_non_it_game.md`.
+- Заметка к кейсу про публичный веб: `C:\PetProjects\Astro-game\.agent\case_public_web_note.md`.
 - Контекст: `C:\PetProjects\Astro-game\.agent\context.md`.
 - Adaptive score: `C:\PetProjects\Astro-game\.agent\agent_score.md`.
 - Правила субагентов: `C:\PetProjects\Astro-game\.agent\subagents`.
@@ -66,3 +70,6 @@
 - Проверки MVP: `npm.cmd run check`, `npm.cmd run build`, `npm.cmd run smoke:ws`.
 - Локальный dev-сервер сейчас рассчитан на клиент `http://localhost:5174` и WebSocket `ws://localhost:8787`.
 - План реального веба: `C:\PetProjects\Astro-game\docs\deployment-plan.md`.
+- Публичный preview: `https://astro-game-worker.spangle-roarer.workers.dev/`.
+- Production WebSocket в preview: `wss://astro-game-worker.spangle-roarer.workers.dev/ws`.
+- Новые проверки деплоя: `npm.cmd run smoke:worker` и удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.spangle-roarer.workers.dev/ws`.

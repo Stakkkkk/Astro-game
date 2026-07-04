@@ -1,12 +1,26 @@
 # План выхода в реальный веб
 
+## Статус на 2026-07-04
+
+Рабочий публичный preview поднят как один Cloudflare Worker:
+
+- статический Vite-клиент отдается через Workers Static Assets;
+- realtime-комнаты работают через Workers + Durable Objects;
+- клиент в production подключается к `/ws` на том же домене;
+- публичный URL: `https://astro-game-worker.spangle-roarer.workers.dev/`;
+- smoke по удаленному `wss://astro-game-worker.spangle-roarer.workers.dev/ws` прошел.
+
+Это временный Wrangler preview (`wrangler deploy --temporary`). Для постоянной публикации нужен `wrangler login` или `CLOUDFLARE_API_TOKEN`, после чего используется `npm run deploy:worker`.
+
 ## Цель
 
 Сделать игру доступной не только локально, а по публичной ссылке, чтобы два игрока с разных устройств могли подключиться к одной комнате и увидеть общий мир.
 
 ## Рекомендуемый путь
 
-Целевой вариант: Cloudflare Pages для Vite-клиента и Cloudflare Workers + Durable Objects для WebSocket-комнат.
+Текущий рабочий вариант: Cloudflare Workers Static Assets для Vite-клиента и Cloudflare Workers + Durable Objects для WebSocket-комнат в одном Worker.
+
+Альтернатива после авторизации Cloudflare: Cloudflare Pages для Vite-клиента и отдельный Cloudflare Worker для WebSocket-комнат. Pages deploy из текущей non-interactive среды потребовал `CLOUDFLARE_API_TOKEN`, поэтому для быстрого публичного результата выбран единый Worker.
 
 Почему так:
 
