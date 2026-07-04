@@ -37,7 +37,8 @@
 
 - Проектный корень: `C:\PetProjects\Astro-game`.
 - GitHub-репозиторий: `https://github.com/Stakkkkk/Astro-game`.
-- Плановая основная ветка: `main`.
+- Основная ветка: `main`, отслеживает `origin/main`.
+- Первый опубликованный коммит: `5c08cbc` (`Initialize agent workspace`).
 - Основной файл правил: `C:\PetProjects\Astro-game\AGENTS.md`.
 - Safety-kit: `C:\PetProjects\Astro-game\.agent-io-safety`.
 - История: `C:\PetProjects\Astro-game\.agent\history.md`.
