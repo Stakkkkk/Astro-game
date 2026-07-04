@@ -66,13 +66,13 @@ docs/
 
 ## Публичный запуск
 
-Текущий публичный preview развернут как единый Cloudflare Worker со Static Assets и Durable Object комнатами:
+Текущий постоянный публичный стенд развернут как единый Cloudflare Worker с Durable Object комнатами:
 
-- сайт: `https://astro-game-worker.spangle-roarer.workers.dev/`;
-- health endpoint: `https://astro-game-worker.spangle-roarer.workers.dev/health`;
-- WebSocket endpoint: `wss://astro-game-worker.spangle-roarer.workers.dev/ws`.
+- сайт: `https://astro-game-worker.stakkkkk.workers.dev/`;
+- health endpoint: `https://astro-game-worker.stakkkkk.workers.dev/health`;
+- WebSocket endpoint: `wss://astro-game-worker.stakkkkk.workers.dev/ws`.
 
-Preview создан через временный аккаунт Wrangler (`wrangler deploy --temporary`) и живет как проверочный публичный стенд. Для постоянного деплоя нужно выполнить `wrangler login` или передать `CLOUDFLARE_API_TOKEN`, затем запустить:
+Стенд опубликован через Cloudflare API plugin, потому что локальный `wrangler login` недоступен. Для этого деплоя клиентские HTML/CSS/JS встроены прямо в Worker module, без Workers Static Assets upload. После нормальной авторизации Cloudflare стоит вернуться к штатному деплою Static Assets:
 
 ```bash
 npm run build

@@ -44,10 +44,12 @@
 - Субагентские правила хранить в `.agent/subagents/`; актуализатор плана запускается после проработки вопросов по плану, архитектор-ревьюер только по явному запросу, тестировщик после правок.
 - Цвет игрока назначает сервер при входе в комнату; клиент использует этот цвет для корабля, scoreboard и стрелки-указателя.
 - Мир сделан условно бесконечным через большой тороидальный размер и поток астероидов вокруг активных игроков.
-- Целевой публичный деплой уточнен: первый рабочий публичный путь — единый Cloudflare Worker со Static Assets для Vite-клиента и Durable Objects для WebSocket-комнат; Cloudflare Pages остается альтернативой после постоянной авторизации.
+- Целевой публичный деплой уточнен: первый рабочий публичный путь — единый Cloudflare Worker для Vite-клиента и Durable Objects для WebSocket-комнат; Cloudflare Pages остается альтернативой после постоянной авторизации.
 - Game core вынесен в `packages/game-core`, Node.js сервер стал локальным adapter, Cloudflare Worker стал production adapter.
 - Временный Cloudflare preview опубликован командой `wrangler deploy --temporary`: `https://astro-game-worker.spangle-roarer.workers.dev/`.
 - Wrangler `whoami` показал отсутствие постоянной авторизации; для постоянного деплоя нужен `wrangler login` или `CLOUDFLARE_API_TOKEN`.
+- Через Cloudflare API plugin создан account workers.dev subdomain `stakkkkk` и постоянный Worker `astro-game-worker`.
+- Из-за ограничения plugin на прямой fetch к `api.workers.cloudflare.com` Workers Static Assets upload не удалось выполнить напрямую; постоянный стенд опубликован как embedded-assets fallback: HTML/CSS/JS встроены в Worker module, Durable Object и WebSocket работают штатно.
 
 ## Текущее состояние
 
@@ -73,5 +75,6 @@
 - Локальный dev-сервер сейчас рассчитан на клиент `http://localhost:5174` и WebSocket `ws://localhost:8787`.
 - План реального веба: `C:\PetProjects\Astro-game\docs\deployment-plan.md`.
 - Публичный preview: `https://astro-game-worker.spangle-roarer.workers.dev/`.
-- Production WebSocket в preview: `wss://astro-game-worker.spangle-roarer.workers.dev/ws`.
-- Новые проверки деплоя: `npm.cmd run smoke:worker` и удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.spangle-roarer.workers.dev/ws`.
+- Постоянный публичный стенд: `https://astro-game-worker.stakkkkk.workers.dev/`.
+- Production WebSocket постоянного стенда: `wss://astro-game-worker.stakkkkk.workers.dev/ws`.
+- Новые проверки деплоя: `npm.cmd run smoke:worker` и удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.stakkkkk.workers.dev/ws`.

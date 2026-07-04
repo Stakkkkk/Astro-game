@@ -42,5 +42,6 @@
 - [x] Подключить Durable Object для комнат.
 - [x] Опубликовать клиент во временный Cloudflare Worker Static Assets preview.
 - [x] Опубликовать сервер во временный Cloudflare Worker preview.
+- [x] Перевести временный preview в постоянный Cloudflare deploy через Cloudflare API plugin.
 - [ ] Проверить подключение с двух устройств.
-- [ ] Перевести временный preview в постоянный Cloudflare deploy через `wrangler login` или `CLOUDFLARE_API_TOKEN`.
+- [ ] Вернуть штатный Workers Static Assets deploy после `wrangler login` или `CLOUDFLARE_API_TOKEN`.

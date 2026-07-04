@@ -2,15 +2,15 @@
 
 ## Статус на 2026-07-04
 
-Рабочий публичный preview поднят как один Cloudflare Worker:
+Постоянный публичный стенд поднят как один Cloudflare Worker:
 
-- статический Vite-клиент отдается через Workers Static Assets;
+- Vite-клиент временно встроен в Worker module как embedded HTML/CSS/JS;
 - realtime-комнаты работают через Workers + Durable Objects;
 - клиент в production подключается к `/ws` на том же домене;
-- публичный URL: `https://astro-game-worker.spangle-roarer.workers.dev/`;
-- smoke по удаленному `wss://astro-game-worker.spangle-roarer.workers.dev/ws` прошел.
+- публичный URL: `https://astro-game-worker.stakkkkk.workers.dev/`;
+- smoke по удаленному `wss://astro-game-worker.stakkkkk.workers.dev/ws` прошел.
 
-Это временный Wrangler preview (`wrangler deploy --temporary`). Для постоянной публикации нужен `wrangler login` или `CLOUDFLARE_API_TOKEN`, после чего используется `npm run deploy:worker`.
+Этот стенд опубликован через Cloudflare API plugin без `wrangler login`. Ограничение текущего API-пути: Workers Static Assets upload требует отдельный upload JWT на `api.workers.cloudflare.com`, а plugin разрешает не все прямые fetch-запросы, поэтому для постоянного стенда применен embedded-assets fallback. После нормальной авторизации Cloudflare предпочтительный путь остается `npm run deploy:worker`, чтобы вернуть штатные Workers Static Assets.
 
 ## Цель
 
@@ -70,7 +70,15 @@
 - Задать production WebSocket URL.
 - Проверка: публичная Pages-ссылка открывает игру и подключается к Worker.
 
-### Этап 6. Проверка с двух устройств
+### Этап 6. Постоянный Cloudflare API deploy
+
+- Создать account workers.dev subdomain `stakkkkk`.
+- Загрузить Worker module через Cloudflare API plugin.
+- Применить Durable Object migration `v1`.
+- Включить `astro-game-worker.stakkkkk.workers.dev`.
+- Проверка: `/health`, HTML и удаленный WebSocket smoke проходят.
+
+### Этап 7. Проверка с двух устройств
 
 - Открыть публичную ссылку на ноутбуке и телефоне.
 - Подключиться к одной комнате.

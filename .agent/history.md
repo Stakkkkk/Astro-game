@@ -279,6 +279,44 @@
 
 - Нужно закоммитить и отправить изменения в `origin/main`.
 
+## 2026-07-04 16:13:28 +07:00
+
+### Что изменено
+
+- Через Cloudflare API plugin создан account workers.dev subdomain `stakkkkk`.
+- Через Cloudflare API plugin опубликован постоянный Worker `astro-game-worker`.
+- Durable Object migration применена с tag `v1`.
+- Из-за ограничения plugin на прямой `fetch` к `api.workers.cloudflare.com` штатный Workers Static Assets upload не использован.
+- Для постоянного стенда собран embedded-assets fallback: HTML/CSS/JS клиента встроены в Worker module, а Durable Object/WebSocket оставлены штатными.
+- Обновлены `README.md`, `docs/deployment-plan.md`, `docs/roadmap.md` и `.agent/context.md`.
+
+### Зачем
+
+- Получить постоянную публичную ссылку без `wrangler login`, который у пользователя локально не работает из-за прав.
+- Сохранить рабочий путь к реальному вебу, даже если прямой Static Assets upload через plugin недоступен.
+
+### Затронутые файлы
+
+- `README.md`
+- `docs/deployment-plan.md`
+- `docs/roadmap.md`
+- `.agent/context.md`
+- `.agent/history.md`
+- `.agent/case_non_it_game.md`
+
+### Проверка
+
+- `npm.cmd run build` прошел.
+- `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --dry-run --outfile .tmp\worker-api-bundle\worker.multipart` прошел.
+- `https://astro-game-worker.stakkkkk.workers.dev/health` вернул `{"name":"astro-game-worker","status":"ok","tickRate":20}`.
+- `https://astro-game-worker.stakkkkk.workers.dev/` вернул HTML клиента.
+- Удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.stakkkkk.workers.dev/ws node scripts/smoke-ws.mjs` прошел.
+
+### Что осталось нерешенным
+
+- Нужно проверить публичную ссылку вручную с двух физических устройств.
+- После нормального `wrangler login` или `CLOUDFLARE_API_TOKEN` стоит вернуть штатный Workers Static Assets deploy вместо embedded-assets fallback.
+
 ## 2026-07-04 13:33:17 +07:00
 
 ### Что изменено
