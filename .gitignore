@@ -1,0 +1,27 @@
+# Agent working memory is intentionally committed for this project.
+
+# Local environments and secrets
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Dependencies and caches
+node_modules/
+.cache/
+.tmp/
+tmp/
+
+# Logs and local output
+*.log
+*.tmp
+*.bak
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
