@@ -8,7 +8,7 @@ const tsxCli = resolve(rootDir, "node_modules/tsx/dist/cli.mjs");
 const viteCli = resolve(rootDir, "node_modules/vite/bin/vite.js");
 
 const children = [
-  spawn(process.execPath, [tsxCli, "apps/server/src/index.ts"], {
+  spawn(process.execPath, [tsxCli, "watch", "apps/server/src/index.ts"], {
     cwd: rootDir,
     env,
     stdio: "inherit",

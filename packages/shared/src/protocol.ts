@@ -115,7 +115,6 @@ function isPlayerInput(value: unknown): value is PlayerInput {
     typeof value.left === "boolean" &&
     typeof value.right === "boolean" &&
     typeof value.thrust === "boolean" &&
-    typeof value.reverse === "boolean" &&
     typeof value.shoot === "boolean"
   );
 }

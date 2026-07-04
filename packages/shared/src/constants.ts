@@ -5,7 +5,6 @@ export const SERVER_TICK_MS = 1_000 / SERVER_TICK_RATE;
 
 export const SHIP_RADIUS = 18;
 export const SHIP_THRUST = 620;
-export const SHIP_REVERSE_THRUST = 360;
 export const SHIP_ROTATION_SPEED = 4.4;
 export const SHIP_DRAG = 0.992;
 export const SHIP_MAX_SPEED = 560;

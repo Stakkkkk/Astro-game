@@ -223,3 +223,58 @@
 ### Что осталось нерешенным
 
 - Нет по текущей задаче после отправки этой записи в `origin/main`.
+
+## 2026-07-04 12:23:01 +07:00
+
+### Что изменено
+
+- Убран задний ход из игрового input-протокола, клиента, сервера, smoke-теста и README.
+- Добавлено поле `thrusting` в `PlayerState`, чтобы серверный snapshot показывал, когда корабль использует тягу.
+- В Canvas-клиент добавлена анимация небольшого огня из двигателя при движении вперед.
+- Добавлены правила субагентов в `.agent/subagents/`.
+- В `AGENTS.md` добавлен раздел `Субагенты`.
+- Обновлен `.agent/agent_score.md`: score увеличен с `50` до `70`.
+- Обновлены `.agent/context.md`, `.agent/history.md`, `.agent/case_non_it_game.md`.
+
+### Зачем
+
+- Привести управление к ракетной модели без заднего хода.
+- Сделать движение вперед визуально понятным через факел двигателя.
+- Зафиксировать процессные роли субагентов: актуализатор плана, архитектор-ревьюер, тестировщик.
+- Отразить пользовательскую оценку `+20` в adaptive score.
+
+### Затронутые файлы
+
+- `AGENTS.md`
+- `README.md`
+- `apps/client/src/main.ts`
+- `apps/server/src/index.ts`
+- `packages/shared/src/constants.ts`
+- `packages/shared/src/protocol.ts`
+- `packages/shared/src/types.ts`
+- `scripts/smoke-ws.mjs`
+- `.agent/agent_score.md`
+- `.agent/context.md`
+- `.agent/history.md`
+- `.agent/case_non_it_game.md`
+- `.agent/subagents/plan-updater.md`
+- `.agent/subagents/architect-reviewer.md`
+- `.agent/subagents/tester.md`
+- `.agent/subagents/architect-reviewer-log.md`
+
+### Проверка
+
+- Поиск по `reverse`, `SHIP_REVERSE`, `Торможение`, `ArrowDown`, `KeyS` в `apps`, `packages`, `README.md`, `docs`, `scripts` не нашел оставшихся упоминаний.
+- После HMR клиент начал отправлять input без `reverse`, а уже запущенный сервер оставался старым процессом и ожидал поле `reverse`; из-за этого управление в браузере стало неработоспособным.
+- `scripts/dev.mjs` исправлен: сервер теперь запускается через `tsx watch apps/server/src/index.ts`, чтобы backend перезапускался при изменении протокола и серверного кода.
+- Старые Node-процессы проекта остановлены, dev-сервер поднят заново.
+- Проверено, что сервер отвечает на `http://localhost:8787`, клиент отдается на `http://localhost:5174`, а серверный процесс запущен в watch-режиме.
+- Тестировщик выполнен основным агентом по правилам `.agent/subagents/tester.md`, потому что отдельный runtime-субагент не запускался.
+- Выполнен `npm.cmd run check`; все workspace прошли TypeScript-проверку.
+- Выполнен `npm.cmd run build`; клиент собран Vite, сервер и shared прошли `tsc --noEmit`.
+- Выполнен `npm.cmd run smoke:ws`; тест подключил двух клиентов к одной комнате и получил общий snapshot.
+- Выполнен `inspect-text.mjs` по измененным текстовым файлам; все проверенные файлы UTF-8 без BOM с LF.
+
+### Что осталось нерешенным
+
+- Нужно закоммитить и отправить изменения в `origin/main`.

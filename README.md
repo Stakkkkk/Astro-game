@@ -35,8 +35,7 @@ npm run dev
 | --- | --- |
 | Поворот влево | `A` или `ArrowLeft` |
 | Поворот вправо | `D` или `ArrowRight` |
-| Ускорение | `W` или `ArrowUp` |
-| Торможение | `S` или `ArrowDown` |
+| Ракетная тяга вперёд | `W` или `ArrowUp` |
 | Выстрел | `Space` |
 | Debug overlay | `P` или `F3` |
 

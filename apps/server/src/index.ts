@@ -22,7 +22,6 @@ import {
   SHIP_MAX_SPEED,
   SHIP_RADIUS,
   SHIP_RESPAWN_MS,
-  SHIP_REVERSE_THRUST,
   SHIP_ROTATION_SPEED,
   SHIP_THRUST,
   SHOT_COOLDOWN_MS,
@@ -68,7 +67,6 @@ const emptyInput: PlayerInput = {
   left: false,
   right: false,
   thrust: false,
-  reverse: false,
   shoot: false
 };
 
@@ -168,6 +166,7 @@ function joinRoom(socket: WebSocket, message: Extract<ClientMessage, { type: "jo
     health: SHIP_MAX_HEALTH,
     score: 0,
     alive: true,
+    thrusting: false,
     lastInputSequence: 0,
     connectionState: "connected",
     socket,
@@ -245,10 +244,7 @@ function updatePlayers(room: Room, dt: number, now: number): void {
       player.velocity.x += facing.x * SHIP_THRUST * dt;
       player.velocity.y += facing.y * SHIP_THRUST * dt;
     }
-    if (player.input.reverse) {
-      player.velocity.x -= facing.x * SHIP_REVERSE_THRUST * dt;
-      player.velocity.y -= facing.y * SHIP_REVERSE_THRUST * dt;
-    }
+    player.thrusting = player.input.thrust;
 
     player.velocity.x *= SHIP_DRAG;
     player.velocity.y *= SHIP_DRAG;
@@ -392,6 +388,7 @@ function respawnPlayer(player: PlayerRecord): void {
   player.rotation = randomRange(0, Math.PI * 2);
   player.health = SHIP_MAX_HEALTH;
   player.alive = true;
+  player.thrusting = false;
   player.respawnAt = 0;
   player.input = { ...emptyInput };
 }
@@ -438,6 +435,7 @@ function stripPlayer(player: PlayerRecord): PlayerState {
     health: player.health,
     score: player.score,
     alive: player.alive,
+    thrusting: player.alive && player.input.thrust,
     lastInputSequence: player.lastInputSequence,
     connectionState: player.connectionState
   };

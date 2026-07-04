@@ -44,7 +44,6 @@ const state: ClientState = {
     left: false,
     right: false,
     thrust: false,
-    reverse: false,
     shoot: false
   },
   inputSeq: 0,
@@ -108,7 +107,7 @@ form.addEventListener("submit", (event) => {
 });
 
 window.addEventListener("keydown", (event) => {
-  if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.code)) {
+  if (["Space", "ArrowUp", "ArrowLeft", "ArrowRight"].includes(event.code)) {
     event.preventDefault();
   }
   if (event.code === "KeyP" || event.code === "F3") {
@@ -226,7 +225,6 @@ function updateInputFromKeys(): void {
     left: keys.has("KeyA") || keys.has("ArrowLeft"),
     right: keys.has("KeyD") || keys.has("ArrowRight"),
     thrust: keys.has("KeyW") || keys.has("ArrowUp"),
-    reverse: keys.has("KeyS") || keys.has("ArrowDown"),
     shoot: keys.has("Space")
   };
 }
@@ -337,6 +335,23 @@ function drawShip(
   ctx.translate(screen.x, screen.y);
   ctx.rotate(player.rotation);
   ctx.globalAlpha = player.alive ? 1 : 0.35;
+  if (player.thrusting && player.alive) {
+    const pulse = 0.76 + Math.sin(performance.now() / 70) * 0.18;
+    ctx.fillStyle = "rgba(255, 211, 91, 0.9)";
+    ctx.beginPath();
+    ctx.moveTo(-15, -7);
+    ctx.lineTo(-15 - 28 * pulse, 0);
+    ctx.lineTo(-15, 7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 112, 67, 0.72)";
+    ctx.beginPath();
+    ctx.moveTo(-14, -4);
+    ctx.lineTo(-14 - 16 * pulse, 0);
+    ctx.lineTo(-14, 4);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.strokeStyle = isSelf ? "#d8f063" : "#78c7ff";
   ctx.fillStyle = isSelf ? "rgba(216, 240, 99, 0.16)" : "rgba(120, 199, 255, 0.14)";
   ctx.lineWidth = 2;

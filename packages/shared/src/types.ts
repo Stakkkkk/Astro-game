@@ -15,7 +15,6 @@ export interface PlayerInput {
   left: boolean;
   right: boolean;
   thrust: boolean;
-  reverse: boolean;
   shoot: boolean;
 }
 
@@ -28,6 +27,7 @@ export interface PlayerState {
   health: number;
   score: number;
   alive: boolean;
+  thrusting: boolean;
   lastInputSequence: number;
   connectionState: "connected" | "disconnected";
 }

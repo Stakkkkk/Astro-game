@@ -79,7 +79,6 @@ function input(overrides = {}) {
     left: false,
     right: false,
     thrust: false,
-    reverse: false,
     shoot: false,
     ...overrides
   };
