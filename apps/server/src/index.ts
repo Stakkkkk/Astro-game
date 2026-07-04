@@ -70,6 +70,17 @@ const emptyInput: PlayerInput = {
   shoot: false
 };
 
+const playerColors = [
+  "#d8f063",
+  "#78c7ff",
+  "#ff8b6b",
+  "#b894ff",
+  "#64e2b7",
+  "#ffd166",
+  "#f76fd7",
+  "#8ee3f5"
+];
+
 const rooms = new Map<string, Room>();
 const port = Number(process.env.PORT ?? 8787);
 const httpServer = createServer((_request, response) => {
@@ -160,6 +171,7 @@ function joinRoom(socket: WebSocket, message: Extract<ClientMessage, { type: "jo
   const player: PlayerRecord = {
     id: playerId,
     nickname,
+    color: pickPlayerColor(room),
     position: spawn,
     velocity: { x: 0, y: 0 },
     rotation: randomRange(0, Math.PI * 2),
@@ -214,6 +226,11 @@ function updateRoom(room: Room, dt: number, now: number): void {
   updateProjectiles(room, dt);
   resolveProjectileAsteroids(room);
   resolveShipAsteroids(room, now);
+}
+
+function pickPlayerColor(room: Room): string {
+  const used = new Set([...room.players.values()].map((player) => player.color));
+  return playerColors.find((color) => !used.has(color)) ?? playerColors[room.players.size % playerColors.length] ?? "#d8f063";
 }
 
 function updateAsteroids(room: Room, dt: number): void {
@@ -429,6 +446,7 @@ function stripPlayer(player: PlayerRecord): PlayerState {
   return {
     id: player.id,
     nickname: player.nickname,
+    color: player.color,
     position: player.position,
     velocity: player.velocity,
     rotation: player.rotation,

@@ -262,13 +262,16 @@ function draw(): void {
 
   const snapshot = state.snapshot;
   const self = snapshot?.players.find((player) => player.id === state.playerId);
-  const camera = self?.position ?? { x: state.world.width / 2, y: state.world.height / 2 };
+    const camera = self?.position ?? { x: state.world.width / 2, y: state.world.height / 2 };
 
   if (snapshot) {
     drawWorldGrid(camera, viewWidth, viewHeight);
     for (const asteroid of snapshot.asteroids) drawAsteroid(camera, asteroid.position, asteroid.radius, asteroid.id);
     for (const projectile of snapshot.projectiles) drawProjectile(camera, projectile.position);
     for (const player of snapshot.players) drawShip(camera, player, player.id === state.playerId);
+    for (const player of snapshot.players) {
+      if (player.id !== state.playerId) drawPlayerIndicator(camera, player, viewWidth, viewHeight);
+    }
   } else {
     drawWaiting(viewWidth, viewHeight);
   }
@@ -353,7 +356,8 @@ function drawShip(
     ctx.fill();
   }
   ctx.strokeStyle = isSelf ? "#d8f063" : "#78c7ff";
-  ctx.fillStyle = isSelf ? "rgba(216, 240, 99, 0.16)" : "rgba(120, 199, 255, 0.14)";
+  ctx.strokeStyle = player.color;
+  ctx.fillStyle = hexToRgba(player.color, 0.16);
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(24, 0);
@@ -365,7 +369,7 @@ function drawShip(
   ctx.stroke();
   ctx.restore();
 
-  ctx.fillStyle = isSelf ? "#d8f063" : "#d9e7ff";
+  ctx.fillStyle = player.color;
   ctx.font = "12px system-ui";
   ctx.textAlign = "center";
   ctx.fillText(player.nickname, screen.x, screen.y - 26);
@@ -374,6 +378,67 @@ function drawShip(
   ctx.fillRect(screen.x - 22, screen.y + 25, 44, 4);
   ctx.fillStyle = player.health > 40 ? "#7ae582" : "#ff8b6b";
   ctx.fillRect(screen.x - 22, screen.y + 25, 44 * Math.max(0, player.health / 100), 4);
+}
+
+function drawPlayerIndicator(
+  camera: { x: number; y: number },
+  player: NonNullable<GameSnapshot["players"][number]>,
+  width: number,
+  height: number
+): void {
+  if (!player.alive) return;
+
+  const screen = worldToScreen(camera, player.position);
+  const margin = 34;
+  const onScreen = screen.x >= margin && screen.x <= width - margin && screen.y >= margin && screen.y <= height - margin;
+  if (onScreen) return;
+
+  const center = { x: width / 2, y: height / 2 };
+  const dx = screen.x - center.x;
+  const dy = screen.y - center.y;
+  const angle = Math.atan2(dy, dx);
+  const edge = edgePoint(center, angle, width, height, margin);
+
+  ctx.save();
+  ctx.translate(edge.x, edge.y);
+  ctx.rotate(angle);
+  ctx.fillStyle = player.color;
+  ctx.strokeStyle = "rgba(8, 9, 13, 0.82)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(16, 0);
+  ctx.lineTo(-10, -9);
+  ctx.lineTo(-6, 0);
+  ctx.lineTo(-10, 9);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = player.color;
+  ctx.font = "12px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText(player.nickname.slice(0, 10), edge.x, edge.y + 24);
+}
+
+function edgePoint(
+  center: { x: number; y: number },
+  angle: number,
+  width: number,
+  height: number,
+  margin: number
+): { x: number; y: number } {
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const halfWidth = width / 2 - margin;
+  const halfHeight = height / 2 - margin;
+  const scaleX = Math.abs(cos) > 0.001 ? halfWidth / Math.abs(cos) : Number.POSITIVE_INFINITY;
+  const scaleY = Math.abs(sin) > 0.001 ? halfHeight / Math.abs(sin) : Number.POSITIVE_INFINITY;
+  const scale = Math.min(scaleX, scaleY);
+  return {
+    x: center.x + cos * scale,
+    y: center.y + sin * scale
+  };
 }
 
 function drawAsteroid(camera: { x: number; y: number }, position: { x: number; y: number }, radius: number, id: string) {
@@ -443,9 +508,21 @@ function renderScoreboard(scoreboard: ScoreboardEntry[]): string {
     .map((entry) => {
       const selfClass = entry.playerId === state.playerId ? " self" : "";
       const dead = entry.alive ? "" : " x";
-      return `<div class="score-row${selfClass}"><span>${escapeHtml(entry.nickname)}${dead}</span><span>${entry.score}</span></div>`;
+      const player = state.snapshot?.players.find((item) => item.id === entry.playerId);
+      const swatch = player ? `<i style="background:${escapeHtml(player.color)}"></i>` : "";
+      return `<div class="score-row${selfClass}"><span>${swatch}${escapeHtml(entry.nickname)}${dead}</span><span>${entry.score}</span></div>`;
     })
     .join("");
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const normalized = hex.replace("#", "");
+  const value = Number.parseInt(normalized, 16);
+  if (Number.isNaN(value) || normalized.length !== 6) return `rgba(255, 255, 255, ${alpha})`;
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function asteroidPoints(id: string, radius: number) {

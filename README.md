@@ -57,5 +57,7 @@ docs/
 - [Архитектура](docs/architecture.md)
 - [Сеть и протокол](docs/networking.md)
 - [Roadmap](docs/roadmap.md)
+- [План выхода в реальный веб](docs/deployment-plan.md)
 - [ADR-001: выбор платформы](docs/decisions/ADR-001-platform-choice.md)
 - [ADR-002: сетевая модель](docs/decisions/ADR-002-network-model.md)
+- [ADR-003: публичный веб-деплой](docs/decisions/ADR-003-public-web-deployment.md)

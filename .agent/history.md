@@ -278,3 +278,49 @@
 ### Что осталось нерешенным
 
 - Нужно закоммитить и отправить изменения в `origin/main`.
+
+## 2026-07-04 12:29:12 +07:00
+
+### Что изменено
+
+- Добавлен серверный цвет игрока в `PlayerState`.
+- Сервер назначает цвет каждому новому игроку из палитры комнаты.
+- Клиент рисует корабль, ник и строку scoreboard цветом игрока.
+- Клиент рисует цветную стрелку на краю экрана для других игроков, если они вне видимой области.
+- Создан `docs/deployment-plan.md`.
+- Создан `docs/decisions/ADR-003-public-web-deployment.md`.
+- Обновлен `docs/roadmap.md` и `README.md`.
+- Обновлены `.agent/context.md`, `.agent/history.md`, `.agent/case_non_it_game.md`.
+
+### Зачем
+
+- Улучшить ориентацию в общем мире: игроки теперь быстрее понимают, где находятся другие участники комнаты.
+- Подготовить согласуемый план перехода от локального MVP к публичному вебу.
+
+### Затронутые файлы
+
+- `README.md`
+- `apps/client/src/main.ts`
+- `apps/client/src/style.css`
+- `apps/server/src/index.ts`
+- `packages/shared/src/types.ts`
+- `docs/deployment-plan.md`
+- `docs/decisions/ADR-003-public-web-deployment.md`
+- `docs/roadmap.md`
+- `.agent/context.md`
+- `.agent/history.md`
+- `.agent/case_non_it_game.md`
+
+### Проверка
+
+- Актуализатор плана выполнен основным агентом по правилам `.agent/subagents/plan-updater.md`: обновлены roadmap и план деплоя.
+- Для плана проверены официальные источники Cloudflare по Pages, Git integration, Durable Objects, WebSockets и WebSocket Hibernation.
+- Тестировщик выполнен основным агентом по правилам `.agent/subagents/tester.md`.
+- Выполнен `npm.cmd run check`; все workspace прошли TypeScript-проверку.
+- Выполнен `npm.cmd run build`; клиент собран Vite, сервер и shared прошли `tsc --noEmit`.
+- Выполнен `npm.cmd run smoke:ws`; тест подключил двух клиентов к одной комнате и получил общий snapshot.
+- Выполнен `inspect-text.mjs` по затронутым текстовым файлам; все проверенные файлы UTF-8 без BOM с LF.
+
+### Что осталось нерешенным
+
+- Нужно закоммитить и отправить изменения в `origin/main`.

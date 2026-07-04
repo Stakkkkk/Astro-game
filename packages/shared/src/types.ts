@@ -21,6 +21,7 @@ export interface PlayerInput {
 export interface PlayerState {
   id: EntityId;
   nickname: string;
+  color: string;
   position: Vector2;
   velocity: Vector2;
   rotation: number;
