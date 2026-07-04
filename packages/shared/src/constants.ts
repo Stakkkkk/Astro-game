@@ -1,5 +1,5 @@
-export const WORLD_WIDTH = 5_000;
-export const WORLD_HEIGHT = 5_000;
+export const WORLD_WIDTH = 100_000;
+export const WORLD_HEIGHT = 100_000;
 export const SERVER_TICK_RATE = 20;
 export const SERVER_TICK_MS = 1_000 / SERVER_TICK_RATE;
 
@@ -18,9 +18,13 @@ export const PROJECTILE_DAMAGE = 34;
 export const SHOT_COOLDOWN_MS = 220;
 
 export const ASTEROID_TARGET_COUNT = 34;
+export const ASTEROIDS_PER_PLAYER = 22;
 export const ASTEROID_MIN_RADIUS = 18;
 export const ASTEROID_MAX_RADIUS = 64;
 export const ASTEROID_BASE_SPEED = 80;
+export const ASTEROID_SPAWN_MIN_DISTANCE = 950;
+export const ASTEROID_SPAWN_MAX_DISTANCE = 1_550;
+export const ASTEROID_DESPAWN_DISTANCE = 2_800;
 
 export const SCORE_HIT = 1;
 export const SCORE_DEATH = -10;

@@ -3,9 +3,13 @@ import { randomUUID } from "node:crypto";
 import { WebSocketServer, type WebSocket } from "ws";
 import {
   ASTEROID_BASE_SPEED,
+  ASTEROID_DESPAWN_DISTANCE,
   ASTEROID_MAX_RADIUS,
   ASTEROID_MIN_RADIUS,
+  ASTEROID_SPAWN_MAX_DISTANCE,
+  ASTEROID_SPAWN_MIN_DISTANCE,
   ASTEROID_TARGET_COUNT,
+  ASTEROIDS_PER_PLAYER,
   NICKNAME_MAX_LENGTH,
   PROJECTILE_DAMAGE,
   PROJECTILE_RADIUS,
@@ -220,6 +224,7 @@ function getOrCreateRoom(roomId: string): Room {
 
 function updateRoom(room: Room, dt: number, now: number): void {
   room.tick += 1;
+  cullDistantAsteroids(room);
   ensureAsteroids(room);
   updateAsteroids(room, dt);
   updatePlayers(room, dt, now);
@@ -363,19 +368,72 @@ function fireProjectile(room: Room, player: PlayerRecord): void {
 }
 
 function ensureAsteroids(room: Room): void {
-  while (room.asteroids.size < ASTEROID_TARGET_COUNT) {
+  const activePlayers = getActivePlayers(room);
+  const targetCount = Math.max(ASTEROID_TARGET_COUNT, activePlayers.length * ASTEROIDS_PER_PLAYER);
+
+  while (room.asteroids.size < targetCount) {
     const radius = randomRange(ASTEROID_MIN_RADIUS, ASTEROID_MAX_RADIUS);
-    room.asteroids.set(randomUUID(), createAsteroid(radius, 0));
+    room.asteroids.set(randomUUID(), createIncomingAsteroid(radius, activePlayers));
   }
 }
 
-function createAsteroid(radius: number, splitLevel: number, position: Vector2 = randomSpawn()): AsteroidState {
+function cullDistantAsteroids(room: Room): void {
+  const activePlayers = getActivePlayers(room);
+  if (activePlayers.length === 0) return;
+
+  for (const [asteroidId, asteroid] of room.asteroids) {
+    const isNearAnyPlayer = activePlayers.some(
+      (player) => distance(player.position, asteroid.position) <= ASTEROID_DESPAWN_DISTANCE
+    );
+    if (!isNearAnyPlayer) room.asteroids.delete(asteroidId);
+  }
+}
+
+function createIncomingAsteroid(radius: number, activePlayers: PlayerRecord[]): AsteroidState {
+  const targetPlayer = randomActivePlayer(activePlayers);
+  if (!targetPlayer) return createAsteroid(radius, 0);
+
+  const spawnAngle = randomRange(0, Math.PI * 2);
+  const spawnDistance = randomRange(ASTEROID_SPAWN_MIN_DISTANCE, ASTEROID_SPAWN_MAX_DISTANCE);
+  const position = wrapPosition(
+    {
+      x: targetPlayer.position.x + Math.cos(spawnAngle) * spawnDistance,
+      y: targetPlayer.position.y + Math.sin(spawnAngle) * spawnDistance
+    },
+    WORLD_WIDTH,
+    WORLD_HEIGHT
+  );
+  const inwardAngle = Math.atan2(targetPlayer.position.y - position.y, targetPlayer.position.x - position.x);
+  const driftAngle = inwardAngle + randomRange(-0.55, 0.55);
+  const speed = randomRange(ASTEROID_BASE_SPEED * 0.8, ASTEROID_BASE_SPEED * 1.55);
+
+  return createAsteroid(radius, 0, position, {
+    x: Math.cos(driftAngle) * speed,
+    y: Math.sin(driftAngle) * speed
+  });
+}
+
+function getActivePlayers(room: Room): PlayerRecord[] {
+  return [...room.players.values()].filter((player) => player.connectionState === "connected" && player.alive);
+}
+
+function randomActivePlayer(activePlayers: PlayerRecord[]): PlayerRecord | undefined {
+  if (activePlayers.length === 0) return undefined;
+  return activePlayers[Math.floor(Math.random() * activePlayers.length)];
+}
+
+function createAsteroid(
+  radius: number,
+  splitLevel: number,
+  position: Vector2 = randomSpawn(),
+  velocity?: Vector2
+): AsteroidState {
   const angle = randomRange(0, Math.PI * 2);
   const speed = randomRange(ASTEROID_BASE_SPEED * 0.45, ASTEROID_BASE_SPEED * 1.25);
   return {
     id: randomUUID(),
     position,
-    velocity: {
+    velocity: velocity ?? {
       x: Math.cos(angle) * speed,
       y: Math.sin(angle) * speed
     },
