@@ -136,3 +136,66 @@
 ### Что осталось нерешенным
 
 - Нет по текущей задаче после отправки финальной записи истории в `origin/main`.
+
+## 2026-07-04 11:58:23 +07:00
+
+### Что изменено
+
+- Принят входящий концепт из `artefacts/in/online_asteroids_training_project.md`.
+- Создана документация продукта: `README.md`, `docs/concept.md`, `docs/architecture.md`, `docs/networking.md`, `docs/roadmap.md`.
+- Созданы ADR: `docs/decisions/ADR-001-platform-choice.md`, `docs/decisions/ADR-002-network-model.md`.
+- Создан TypeScript monorepo на npm workspaces.
+- Создан shared-пакет `packages/shared` с протоколом, типами, константами и math helpers.
+- Создан WebSocket-сервер `apps/server` с авторитетным game loop, комнатами, кораблями, астероидами, снарядами, уронами и очками.
+- Создан Canvas-клиент `apps/client` со стартовым экраном, управлением, HUD, scoreboard и debug overlay.
+- Добавлен smoke-тест `scripts/smoke-ws.mjs`.
+- В `.gitignore` добавлено `dist/`.
+- Обновлен `.agent/context.md` и `.agent/case_non_it_game.md`.
+
+### Зачем
+
+- Превратить надиктованный концепт в работающий первый сетевой вертикальный срез.
+- Не начинать с большой архитектуры, а сразу доказать цепочку: игрок → сервер → общий мир → астероиды → выстрелы → очки → второй клиент видит результат.
+
+### Затронутые файлы и каталоги
+
+- `artefacts/in/online_asteroids_training_project.md`
+- `README.md`
+- `package.json`
+- `package-lock.json`
+- `tsconfig.base.json`
+- `scripts/`
+- `apps/client/`
+- `apps/server/`
+- `packages/shared/`
+- `docs/`
+- `.gitignore`
+- `.agent/context.md`
+- `.agent/history.md`
+- `.agent/case_non_it_game.md`
+
+### Проверка
+
+- Выполнен `node .agent-io-safety/skills/safe-text-io/scripts/inspect-text.mjs artefacts/in/online_asteroids_training_project.md --fail-on-bom --eol lf`; входящий Markdown UTF-8 без BOM с LF.
+- Проверен `node --version`: `v24.16.0`.
+- Проверен `pnpm --version`: `pnpm` не установлен.
+- Проверен `npm.cmd --version`: `11.13.0`.
+- Проверены актуальные версии пакетов через `npm.cmd view`: Vite `8.1.3`, TypeScript `6.0.3`, `ws` `8.21.0`, `tsx` `4.23.0`, `@types/ws` `8.18.1`, `@types/node` `26.1.0`.
+- Выполнен `npm.cmd install`; установлено 26 пакетов, уязвимости не найдены.
+- Первый `npm.cmd run check` выявил nullable DOM-ошибки в клиенте; исправлено через `mustQuery` и явный `ctx`.
+- Выполнен `npm.cmd run check`; все workspace прошли TypeScript-проверку.
+- Выполнен `npm.cmd run build`; клиент собран Vite, сервер и shared прошли `tsc --noEmit`.
+- Первый `npm.cmd run smoke:ws` выявил Windows `spawn EINVAL` при запуске `npm.cmd` из Node; smoke-тест переписан на прямой запуск `tsx`.
+- Выполнен `npm.cmd run smoke:ws`; тест подключил двух клиентов к одной комнате и получил общий snapshot.
+- После добавления движения астероидов повторно выполнены `npm.cmd run check`, `npm.cmd run build`, `npm.cmd run smoke:ws`; все проверки прошли.
+- Первый запуск `npm.cmd run dev` упал с Windows `spawn EINVAL` из-за запуска `npm.cmd` из `scripts/dev.mjs`; dev-скрипт переписан на прямой запуск `tsx` и `vite`.
+- Обнаружено, что `localhost:5173` занят старым `python -m http.server 5173 --bind 127.0.0.1`; клиентский dev-порт закреплен на `5174`, чтобы не трогать чужой процесс.
+- Dev-сервер запущен: клиент `http://localhost:5174`, сервер `http://localhost:8787`, WebSocket `ws://localhost:8787`.
+- Проверено `Invoke-WebRequest http://localhost:8787`: сервер вернул JSON со статусом `ok`.
+- Проверено `Invoke-WebRequest http://localhost:5174`: Vite отдает HTML клиента Astro Game.
+- После фиксации порта `5174` повторно выполнены `npm.cmd run check`, `npm.cmd run build`, `npm.cmd run smoke:ws`; все проверки прошли.
+- Выполнен `inspect-text.mjs` для ключевых новых и измененных файлов, включая `package-lock.json`, README, scripts, client/server source и агентскую память; все проверенные файлы UTF-8 без BOM с LF.
+
+### Что осталось нерешенным
+
+- Нужно закоммитить и отправить изменения в `origin/main`.

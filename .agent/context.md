@@ -5,6 +5,7 @@
 - Пользователь попросил обжить проект, используя инструкции из `Stakkkkk/agent-start`.
 - Пользователь уточнил, что проект нужно вести как кейс «не ИТшник создает игру», чтобы позже сделать методические пособия для коллег без фантазии.
 - Пользователь указал GitHub-репозиторий `https://github.com/Stakkkkk/Astro-game` и отдельно попросил, чтобы агентская обвязка тоже шла в git.
+- Пользователь надиктовал концепт в ChatGPT из-за проблем с микрофоном ноутбука, получил Markdown и положил его во входящие артефакты проекта.
 - Рабочий каталог на момент обживания: `C:\PetProjects\Astro-game`.
 - Каталог на момент проверки был пустым и не являлся git-репозиторием.
 - Для правил выбран русский язык, потому что пользовательские глобальные правила требуют отвечать на русском языке.
@@ -32,6 +33,9 @@
 - Создать `.agent/agent_score.md` с нейтральным значением `50`.
 - После уточнения пользователя убрать игнорирование `.agent/`: агентская память и обвязка должны версионироваться вместе с проектом.
 - Инициализировать git в `C:\PetProjects\Astro-game`, использовать ветку `main` и remote `origin` на `https://github.com/Stakkkkk/Astro-game.git`.
+- Принять исходный концепт из `artefacts/in/online_asteroids_training_project.md` как сырой источник требований.
+- Для первого MVP выбрать Web + TypeScript + Node.js WebSocket server + Canvas 2D, а Cloudflare/Durable Objects оставить как следующий деплойный этап после работающего локального slice.
+- Использовать npm workspaces вместо pnpm, потому что `pnpm` на машине не установлен, а npm уже доступен через `npm.cmd`.
 
 ## Текущее состояние
 
@@ -45,3 +49,7 @@
 - Кейс: `C:\PetProjects\Astro-game\.agent\case_non_it_game.md`.
 - Контекст: `C:\PetProjects\Astro-game\.agent\context.md`.
 - Adaptive score: `C:\PetProjects\Astro-game\.agent\agent_score.md`.
+- Сырой концепт: `C:\PetProjects\Astro-game\artefacts\in\online_asteroids_training_project.md`.
+- Документация продукта: `C:\PetProjects\Astro-game\README.md`, `C:\PetProjects\Astro-game\docs`.
+- Первый рабочий стек: npm workspaces, TypeScript, Vite, Canvas 2D, Node.js, `ws`.
+- Проверки MVP: `npm.cmd run check`, `npm.cmd run build`, `npm.cmd run smoke:ws`.

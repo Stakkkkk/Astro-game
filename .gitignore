@@ -9,6 +9,7 @@ venv/
 
 # Dependencies and caches
 node_modules/
+dist/
 .cache/
 .tmp/
 tmp/
