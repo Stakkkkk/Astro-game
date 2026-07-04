@@ -19,6 +19,7 @@ tmp/
 *.log
 *.tmp
 *.bak
+.codex-remote-attachments/
 
 # OS and editor noise
 .DS_Store

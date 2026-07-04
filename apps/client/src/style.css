@@ -15,7 +15,9 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 button,
@@ -26,6 +28,7 @@ input {
 #app {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
 }
 
 .game-shell {
@@ -306,7 +309,32 @@ canvas {
 @media (max-width: 640px) {
   .hud {
     min-width: 0;
-    width: calc(100vw - 28px);
+    right: 10px;
+    left: 10px;
+    width: auto;
+    padding: 8px 10px;
+    gap: 5px 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hud-row {
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .hud-row strong {
+    font-size: 12px;
+  }
+
+  .scoreboard {
+    grid-column: 1 / -1;
+    gap: 3px;
+    margin-top: 0;
+    padding-top: 5px;
+  }
+
+  .score-row {
+    font-size: 12px;
   }
 }
 
@@ -323,27 +351,47 @@ canvas {
 @media (max-width: 520px) {
   .touch-controls {
     padding-right: max(18px, env(safe-area-inset-right));
-    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    padding-bottom: max(64px, env(safe-area-inset-bottom));
     padding-left: max(18px, env(safe-area-inset-left));
   }
 
   .touch-joystick {
-    width: 116px;
-    height: 116px;
+    width: 106px;
+    height: 106px;
   }
 
   .touch-joystick-knob {
-    width: 48px;
-    height: 48px;
-    margin: -24px 0 0 -24px;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
   }
 
   .touch-fire {
-    width: 86px;
-    height: 86px;
+    width: 78px;
+    height: 78px;
   }
 
   .touch-fire::before {
-    inset: 25px;
+    inset: 23px;
+  }
+}
+
+@media (max-width: 380px) {
+  .touch-controls {
+    padding-bottom: max(58px, env(safe-area-inset-bottom));
+  }
+
+  .touch-joystick {
+    width: 96px;
+    height: 96px;
+  }
+
+  .touch-fire {
+    width: 72px;
+    height: 72px;
+  }
+
+  .touch-fire::before {
+    inset: 21px;
   }
 }

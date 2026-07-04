@@ -44,3 +44,20 @@
 - `npm.cmd run smoke:worker`
 - `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
 - удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.spangle-roarer.workers.dev/ws`
+
+## Обновление 2026-07-04 14:05:05 +07:00
+
+- По мобильному скриншоту исправлен масштаб телефона: для touch-экранов добавлен world zoom `1.35`.
+- HUD на ширине до 640px переведен в компактную сетку, чтобы не занимать большую часть верхнего экрана.
+- Touch controls на узких экранах уменьшены и подняты выше нижней системной навигации.
+- Для высоты приложения добавлен `100dvh`, чтобы лучше учитывать мобильный viewport.
+- Preview обновлен: публичный HTML ссылается на `/assets/index-EGZLC2QB.js` и `/assets/index-Cn8f2AaM.css`.
+
+Проверки:
+
+- `npm.cmd run check`
+- `npm.cmd run build`
+- `npm.cmd run smoke:ws`
+- `npm.cmd run smoke:worker`
+- `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
+- удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.spangle-roarer.workers.dev/ws`

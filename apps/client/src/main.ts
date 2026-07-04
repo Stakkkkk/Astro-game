@@ -269,9 +269,10 @@ function connect(nickname: string, roomId: string): void {
 
   socket.addEventListener("close", () => {
     if (state.socket !== socket) return;
+    const wasJoined = state.joined;
     state.connected = false;
     state.joined = false;
-    statusLine.textContent = "Соединение закрыто";
+    statusLine.textContent = wasJoined ? "Соединение закрыто" : "Не удалось подключиться к серверу";
     joinPanel.style.display = "grid";
     gameShell.classList.remove("is-playing");
     resetTouchInput();
@@ -279,7 +280,6 @@ function connect(nickname: string, roomId: string): void {
 
   socket.addEventListener("error", () => {
     if (state.socket !== socket || state.joined) return;
-    statusLine.textContent = "Не удалось подключиться к серверу";
   });
 }
 
@@ -463,10 +463,17 @@ function worldToScreen(camera: { x: number; y: number }, position: { x: number; 
   const ratio = window.devicePixelRatio || 1;
   const viewWidth = canvas.width / ratio;
   const viewHeight = canvas.height / ratio;
+  const zoom = getWorldZoom();
   return {
-    x: position.x - camera.x + viewWidth / 2,
-    y: position.y - camera.y + viewHeight / 2
+    x: (position.x - camera.x) * zoom + viewWidth / 2,
+    y: (position.y - camera.y) * zoom + viewHeight / 2
   };
+}
+
+function getWorldZoom(): number {
+  const touchLike = window.matchMedia("(hover: none), (pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+  const narrowSide = Math.min(window.innerWidth, window.innerHeight);
+  return touchLike && narrowSide <= 720 ? 1.35 : 1;
 }
 
 function drawBackground(width: number, height: number): void {
@@ -486,12 +493,15 @@ function drawWorldGrid(camera: { x: number; y: number }, width: number, height: 
   ctx.strokeStyle = "rgba(129, 174, 213, 0.11)";
   ctx.lineWidth = 1;
   const grid = 500;
-  const left = camera.x - width / 2;
-  const top = camera.y - height / 2;
+  const zoom = getWorldZoom();
+  const worldWidth = width / zoom;
+  const worldHeight = height / zoom;
+  const left = camera.x - worldWidth / 2;
+  const top = camera.y - worldHeight / 2;
   const startX = Math.floor(left / grid) * grid;
   const startY = Math.floor(top / grid) * grid;
 
-  for (let x = startX; x < left + width + grid; x += grid) {
+  for (let x = startX; x < left + worldWidth + grid; x += grid) {
     const screen = worldToScreen(camera, { x, y: camera.y });
     ctx.beginPath();
     ctx.moveTo(screen.x, 0);
@@ -499,7 +509,7 @@ function drawWorldGrid(camera: { x: number; y: number }, width: number, height: 
     ctx.stroke();
   }
 
-  for (let y = startY; y < top + height + grid; y += grid) {
+  for (let y = startY; y < top + worldHeight + grid; y += grid) {
     const screen = worldToScreen(camera, { x: camera.x, y });
     ctx.beginPath();
     ctx.moveTo(0, screen.y);
@@ -517,6 +527,8 @@ function drawShip(
   ctx.save();
   ctx.translate(screen.x, screen.y);
   ctx.rotate(player.rotation);
+  const zoom = getWorldZoom();
+  ctx.scale(zoom, zoom);
   ctx.globalAlpha = player.alive ? 1 : 0.35;
   if (player.thrusting && player.alive) {
     const pulse = 0.76 + Math.sin(performance.now() / 70) * 0.18;
@@ -552,12 +564,12 @@ function drawShip(
   ctx.fillStyle = player.color;
   ctx.font = "12px system-ui";
   ctx.textAlign = "center";
-  ctx.fillText(player.nickname, screen.x, screen.y - 26);
+  ctx.fillText(player.nickname, screen.x, screen.y - 26 * zoom);
 
   ctx.fillStyle = "rgba(255,255,255,0.16)";
-  ctx.fillRect(screen.x - 22, screen.y + 25, 44, 4);
+  ctx.fillRect(screen.x - 22 * zoom, screen.y + 25 * zoom, 44 * zoom, 4 * zoom);
   ctx.fillStyle = player.health > 40 ? "#7ae582" : "#ff8b6b";
-  ctx.fillRect(screen.x - 22, screen.y + 25, 44 * Math.max(0, player.health / 100), 4);
+  ctx.fillRect(screen.x - 22 * zoom, screen.y + 25 * zoom, 44 * Math.max(0, player.health / 100) * zoom, 4 * zoom);
 }
 
 function drawPlayerIndicator(
@@ -623,7 +635,7 @@ function edgePoint(
 
 function drawAsteroid(camera: { x: number; y: number }, position: { x: number; y: number }, radius: number, id: string) {
   const screen = worldToScreen(camera, position);
-  const points = asteroidPoints(id, radius);
+  const points = asteroidPoints(id, radius * getWorldZoom());
   ctx.strokeStyle = "#c7b9a0";
   ctx.fillStyle = "rgba(168, 149, 119, 0.18)";
   ctx.lineWidth = 2;
@@ -641,9 +653,10 @@ function drawAsteroid(camera: { x: number; y: number }, position: { x: number; y
 
 function drawProjectile(camera: { x: number; y: number }, position: { x: number; y: number }): void {
   const screen = worldToScreen(camera, position);
+  const zoom = getWorldZoom();
   ctx.fillStyle = "#ffec7a";
   ctx.beginPath();
-  ctx.arc(screen.x, screen.y, 3, 0, Math.PI * 2);
+  ctx.arc(screen.x, screen.y, 3 * zoom, 0, Math.PI * 2);
   ctx.fill();
 }
 
