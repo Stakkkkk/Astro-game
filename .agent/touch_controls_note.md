@@ -43,9 +43,30 @@
 - `npm.cmd run smoke:ws`
 - `npm.cmd run smoke:worker`
 - `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
+- Новый temporary preview: `https://astro-game-worker.glowing-newsboy.workers.dev/`.
+- Обычный `/` вернул свежий HTML с `/assets/index-CgfENCKB.js` и `Cache-Control: no-store, max-age=0`.
+- `https://astro-game-worker.glowing-newsboy.workers.dev/health` вернул `ok`.
+- Удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.glowing-newsboy.workers.dev/ws` прошел после короткого прогрева deploy.
+- HTML cache-buster в worker обновлен до `2026-07-04-flight-physics`.
+- `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
 - Обычный `/` на preview вернул новый HTML с `/assets/index-D3haDGmw.js` и `/assets/index-T_jwM9eI.css`, заголовок `Cache-Control: no-store, max-age=0`.
 - `https://astro-game-worker.spangle-roarer.workers.dev/health` вернул `ok`.
 - Удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.spangle-roarer.workers.dev/ws` прошел со второй попытки; первая попытка сразу после deploy поймала timeout на прогреве.
+
+## Обновление 2026-07-04 15:06:23 +07:00
+
+- По запросу пользователя убрано самоторможение корабля: `SHIP_DRAG` выставлен в `1`, скорость теперь сохраняется без газа до столкновения/нового импульса/лимита скорости.
+- Радиус включения газа на touch-джойстике увеличен: поворот работает от малого отклонения, а тяга включается только после `0.68` силы отклонения.
+- Для мобильной производительности canvas теперь ограничивает pixel ratio: на touch-устройствах максимум `1.35`, на desktop максимум `2`.
+- Параметры viewport/zoom/pixel ratio кэшируются, чтобы не дергать `matchMedia` многократно во время одного рендера.
+- При столкновении корабля с астероидом астероид удаляется сразу, поэтому игрок не остается внутри коллизии и не получает повторный урон каждый тик.
+
+Проверки:
+
+- `npm.cmd run check`
+- `npm.cmd run build`
+- `npm.cmd run smoke:ws`
+- `npm.cmd run smoke:worker`
 - `npm.cmd run smoke:worker`
 - `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
 - удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.spangle-roarer.workers.dev/ws`

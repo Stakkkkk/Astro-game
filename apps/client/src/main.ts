@@ -43,11 +43,24 @@ interface TouchJoystickState {
   strength: number;
 }
 
+interface ViewportMetrics {
+  width: number;
+  height: number;
+  nativePixelRatio: number;
+  pixelRatio: number;
+  cameraZoom: number;
+  touchLike: boolean;
+}
+
 const defaultWorld: WorldConfig = {
   width: 5_000,
   height: 5_000,
   tickRate: 20
 };
+
+const TOUCH_THRUST_THRESHOLD = 0.68;
+const MOBILE_CANVAS_PIXEL_RATIO = 1.35;
+const DESKTOP_CANVAS_PIXEL_RATIO = 2;
 
 const state: ClientState = {
   socket: undefined,
@@ -163,6 +176,7 @@ const joystick: TouchJoystickState = {
   strength: 0
 };
 const firePointers = new Set<number>();
+let cachedViewportMetrics: ViewportMetrics | undefined;
 
 function mustQuery<T extends Element>(selector: string): T {
   const element = app.querySelector<T>(selector);
@@ -431,7 +445,7 @@ function updateTouchSteering(): void {
 
   touchInput.left = delta < -turnDeadZone;
   touchInput.right = delta > turnDeadZone;
-  touchInput.thrust = joystick.strength > 0.4;
+  touchInput.thrust = joystick.strength > TOUCH_THRUST_THRESHOLD;
 }
 
 function angularDelta(target: number, current: number): number {
@@ -458,7 +472,7 @@ function resetTouchInput(): void {
 }
 
 function resizeCanvas(): void {
-  const ratio = window.devicePixelRatio || 1;
+  const ratio = getCanvasPixelRatio();
   const width = Math.floor(canvas.clientWidth * ratio);
   const height = Math.floor(canvas.clientHeight * ratio);
   if (canvas.width !== width || canvas.height !== height) {
@@ -478,7 +492,7 @@ function frame(now: number): void {
 }
 
 function draw(now: number, deltaMs: number): void {
-  const ratio = window.devicePixelRatio || 1;
+  const ratio = getCanvasPixelRatio();
   const width = canvas.width;
   const height = canvas.height;
   const viewWidth = width / ratio;
@@ -516,7 +530,7 @@ function draw(now: number, deltaMs: number): void {
 }
 
 function worldToScreen(camera: { x: number; y: number }, position: { x: number; y: number }) {
-  const ratio = window.devicePixelRatio || 1;
+  const ratio = getCanvasPixelRatio();
   const viewWidth = canvas.width / ratio;
   const viewHeight = canvas.height / ratio;
   const zoom = getCameraZoom();
@@ -527,18 +541,47 @@ function worldToScreen(camera: { x: number; y: number }, position: { x: number; 
 }
 
 function getCameraZoom(): number {
-  if (!isTouchLikeScreen()) return 1;
+  return getViewportMetrics().cameraZoom;
+}
 
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  const narrowSide = Math.min(width, height);
-  if (narrowSide > 720) return 1;
-
-  return width > height ? 0.68 : 0.82;
+function getCanvasPixelRatio(): number {
+  return getViewportMetrics().pixelRatio;
 }
 
 function isTouchLikeScreen(): boolean {
-  return window.matchMedia("(hover: none), (pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+  return getViewportMetrics().touchLike;
+}
+
+function getViewportMetrics(): ViewportMetrics {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const nativePixelRatio = window.devicePixelRatio || 1;
+  if (
+    cachedViewportMetrics &&
+    cachedViewportMetrics.width === width &&
+    cachedViewportMetrics.height === height &&
+    cachedViewportMetrics.nativePixelRatio === nativePixelRatio
+  ) {
+    return cachedViewportMetrics;
+  }
+
+  const touchLike = window.matchMedia("(hover: none), (pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+  const narrowSide = Math.min(width, height);
+  const cameraZoom = touchLike && narrowSide <= 720 ? (width > height ? 0.68 : 0.82) : 1;
+  const pixelRatio = Math.max(
+    1,
+    Math.min(nativePixelRatio, touchLike ? MOBILE_CANVAS_PIXEL_RATIO : DESKTOP_CANVAS_PIXEL_RATIO)
+  );
+
+  cachedViewportMetrics = {
+    width,
+    height,
+    nativePixelRatio,
+    pixelRatio,
+    cameraZoom,
+    touchLike
+  };
+  return cachedViewportMetrics;
 }
 
 function getPredictionSeconds(now: number): number {

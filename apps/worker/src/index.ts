@@ -19,7 +19,7 @@ export interface Env {
   ASSETS: Fetcher;
 }
 
-const HTML_ASSET_VERSION = "2026-07-04-mobile-scale";
+const HTML_ASSET_VERSION = "2026-07-04-flight-physics";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {

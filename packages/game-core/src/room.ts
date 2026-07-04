@@ -250,9 +250,10 @@ export class RoomEngine {
     for (const player of this.players.values()) {
       if (!player.alive) continue;
 
-      for (const asteroid of this.asteroids.values()) {
+      for (const [asteroidId, asteroid] of this.asteroids) {
         if (distance(player.position, asteroid.position) > asteroid.radius + SHIP_RADIUS) continue;
 
+        this.asteroids.delete(asteroidId);
         player.health -= 32;
         player.score += SCORE_DAMAGE;
         player.velocity.x -= Math.cos(player.rotation) * 220;
