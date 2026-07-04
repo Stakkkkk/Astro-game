@@ -43,11 +43,32 @@
 - `npm.cmd run smoke:ws`
 - `npm.cmd run smoke:worker`
 - `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
+- Preview `https://astro-game-worker.glowing-newsboy.workers.dev/` вернул свежий HTML с `/assets/index-BWvgwzuW.js` и `Cache-Control: no-store, max-age=0`.
+- `https://astro-game-worker.glowing-newsboy.workers.dev/health` вернул `ok`.
+- Удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.glowing-newsboy.workers.dev/ws` прошел.
+- `npm.cmd run build`
+- `npm.cmd run smoke:ws`
+- `npm.cmd run smoke:worker`
+- `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
 - Новый temporary preview: `https://astro-game-worker.glowing-newsboy.workers.dev/`.
 - Обычный `/` вернул свежий HTML с `/assets/index-CgfENCKB.js` и `Cache-Control: no-store, max-age=0`.
 - `https://astro-game-worker.glowing-newsboy.workers.dev/health` вернул `ok`.
 - Удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.glowing-newsboy.workers.dev/ws` прошел после короткого прогрева deploy.
 - HTML cache-buster в worker обновлен до `2026-07-04-flight-physics`.
+
+## Обновление 2026-07-04 15:14:13 +07:00
+
+- Пользователь подтвердил, что игра стала играбельной, но мобильные лаги остались критичными.
+- Добавлено локальное visual prediction для собственного корабля: клиент сразу применяет текущий `left/right/thrust`, `SHIP_THRUST`, `SHIP_MAX_SPEED` и `wrapPosition` между серверными snapshot.
+- Для чужих объектов сохранен короткий prediction cap `0.08`, для своего корабля cap увеличен до `0.2`, чтобы компенсировать задержку управления на мобильной сети.
+- Мобильный canvas pixel ratio снижен до `1`, чтобы резко уменьшить число пикселей на кадр.
+- На touch-устройствах количество фоновых звезд уменьшено со `110` до `56`.
+- Астероиды и projectiles за пределами экрана теперь отсекаются до построения canvas path.
+- HTML cache-buster в worker обновлен до `2026-07-04-mobile-lag`.
+
+Проверки:
+
+- `npm.cmd run check`
 - `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
 - Обычный `/` на preview вернул новый HTML с `/assets/index-D3haDGmw.js` и `/assets/index-T_jwM9eI.css`, заголовок `Cache-Control: no-store, max-age=0`.
 - `https://astro-game-worker.spangle-roarer.workers.dev/health` вернул `ok`.

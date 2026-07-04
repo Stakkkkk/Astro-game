@@ -1,12 +1,16 @@
 import {
   SHIP_ROTATION_SPEED,
+  SHIP_MAX_SPEED,
+  SHIP_THRUST,
+  clampMagnitude,
   encodeMessage,
   type GameSnapshot,
   type PlayerInput,
   type ScoreboardEntry,
   type Vector2,
   type ServerMessage,
-  type WorldConfig
+  type WorldConfig,
+  wrapPosition
 } from "@astro-game/shared";
 import "./style.css";
 
@@ -59,8 +63,10 @@ const defaultWorld: WorldConfig = {
 };
 
 const TOUCH_THRUST_THRESHOLD = 0.68;
-const MOBILE_CANVAS_PIXEL_RATIO = 1.35;
+const MOBILE_CANVAS_PIXEL_RATIO = 1;
 const DESKTOP_CANVAS_PIXEL_RATIO = 2;
+const SELF_PREDICTION_MAX_SECONDS = 0.2;
+const REMOTE_PREDICTION_MAX_SECONDS = 0.08;
 
 const state: ClientState = {
   socket: undefined,
@@ -504,8 +510,12 @@ function draw(now: number, deltaMs: number): void {
   drawBackground(viewWidth, viewHeight);
 
   const snapshot = state.snapshot;
-  const predictionSeconds = getPredictionSeconds(now);
-  const players = snapshot?.players.map((player) => predictPlayer(player, predictionSeconds)) ?? [];
+  const remotePredictionSeconds = getPredictionSeconds(now, REMOTE_PREDICTION_MAX_SECONDS);
+  const selfPredictionSeconds = getPredictionSeconds(now, SELF_PREDICTION_MAX_SECONDS);
+  const players =
+    snapshot?.players.map((player) =>
+      predictPlayer(player, player.id === state.playerId ? selfPredictionSeconds : remotePredictionSeconds)
+    ) ?? [];
   const self = players.find((player) => player.id === state.playerId);
   const cameraTarget = self?.position ?? { x: state.world.width / 2, y: state.world.height / 2 };
   const camera = getSmoothedCamera(cameraTarget, deltaMs);
@@ -513,10 +523,17 @@ function draw(now: number, deltaMs: number): void {
   if (snapshot) {
     drawWorldGrid(camera, viewWidth, viewHeight);
     for (const asteroid of snapshot.asteroids) {
-      drawAsteroid(camera, predictPosition(asteroid.position, asteroid.velocity, predictionSeconds), asteroid.radius, asteroid.id);
+      drawAsteroid(
+        camera,
+        predictPosition(asteroid.position, asteroid.velocity, remotePredictionSeconds),
+        asteroid.radius,
+        asteroid.id,
+        viewWidth,
+        viewHeight
+      );
     }
     for (const projectile of snapshot.projectiles) {
-      drawProjectile(camera, predictPosition(projectile.position, projectile.velocity, predictionSeconds));
+      drawProjectile(camera, predictPosition(projectile.position, projectile.velocity, remotePredictionSeconds), viewWidth, viewHeight);
     }
     for (const player of players) drawShip(camera, player, player.id === state.playerId);
     for (const player of players) {
@@ -584,21 +601,32 @@ function getViewportMetrics(): ViewportMetrics {
   return cachedViewportMetrics;
 }
 
-function getPredictionSeconds(now: number): number {
+function getPredictionSeconds(now: number, maxSeconds: number): number {
   if (!state.snapshotReceivedAt) return 0;
-  return Math.min(0.08, Math.max(0, (now - state.snapshotReceivedAt) / 1_000));
+  return Math.min(maxSeconds, Math.max(0, (now - state.snapshotReceivedAt) / 1_000));
 }
 
 function predictPlayer(player: GameSnapshot["players"][number], seconds: number): GameSnapshot["players"][number] {
   let rotation = player.rotation;
+  let velocity = player.velocity;
   if (player.id === state.playerId) {
     if (state.input.left) rotation -= SHIP_ROTATION_SPEED * seconds;
     if (state.input.right) rotation += SHIP_ROTATION_SPEED * seconds;
+    if (state.input.thrust) {
+      velocity = clampMagnitude(
+        {
+          x: player.velocity.x + Math.cos(rotation) * SHIP_THRUST * seconds,
+          y: player.velocity.y + Math.sin(rotation) * SHIP_THRUST * seconds
+        },
+        SHIP_MAX_SPEED
+      );
+    }
   }
 
   return {
     ...player,
-    position: predictPosition(player.position, player.velocity, seconds),
+    position: wrapPosition(predictPosition(player.position, velocity, seconds), state.world.width, state.world.height),
+    velocity,
     rotation
   };
 }
@@ -637,7 +665,8 @@ function drawBackground(width: number, height: number): void {
   ctx.fillRect(0, 0, width, height);
 
   ctx.fillStyle = "rgba(255,255,255,0.55)";
-  for (let index = 0; index < 110; index += 1) {
+  const starCount = isTouchLikeScreen() ? 56 : 110;
+  for (let index = 0; index < starCount; index += 1) {
     const x = (index * 137.5) % width;
     const y = (index * 241.7) % height;
     const size = index % 7 === 0 ? 1.6 : 1;
@@ -789,9 +818,19 @@ function edgePoint(
   };
 }
 
-function drawAsteroid(camera: { x: number; y: number }, position: { x: number; y: number }, radius: number, id: string) {
+function drawAsteroid(
+  camera: { x: number; y: number },
+  position: { x: number; y: number },
+  radius: number,
+  id: string,
+  width: number,
+  height: number
+) {
   const screen = worldToScreen(camera, position);
-  const points = asteroidPoints(id, radius * getCameraZoom());
+  const screenRadius = radius * getCameraZoom();
+  if (isCircleOffscreen(screen, screenRadius + 16, width, height)) return;
+
+  const points = asteroidPoints(id, screenRadius);
   ctx.strokeStyle = "#c7b9a0";
   ctx.fillStyle = "rgba(168, 149, 119, 0.18)";
   ctx.lineWidth = 2;
@@ -807,13 +846,24 @@ function drawAsteroid(camera: { x: number; y: number }, position: { x: number; y
   ctx.stroke();
 }
 
-function drawProjectile(camera: { x: number; y: number }, position: { x: number; y: number }): void {
+function drawProjectile(camera: { x: number; y: number }, position: { x: number; y: number }, width: number, height: number): void {
   const screen = worldToScreen(camera, position);
   const zoom = getCameraZoom();
+  if (isCircleOffscreen(screen, 8 * zoom, width, height)) return;
+
   ctx.fillStyle = "#ffec7a";
   ctx.beginPath();
   ctx.arc(screen.x, screen.y, 3 * zoom, 0, Math.PI * 2);
   ctx.fill();
+}
+
+function isCircleOffscreen(
+  center: { x: number; y: number },
+  radius: number,
+  width: number,
+  height: number
+): boolean {
+  return center.x < -radius || center.x > width + radius || center.y < -radius || center.y > height + radius;
 }
 
 function drawWaiting(width: number, height: number): void {
