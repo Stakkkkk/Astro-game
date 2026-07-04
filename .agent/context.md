@@ -43,6 +43,7 @@
 - GitHub-репозиторий: `https://github.com/Stakkkkk/Astro-game`.
 - Основная ветка: `main`, отслеживает `origin/main`.
 - Первый опубликованный коммит: `5c08cbc` (`Initialize agent workspace`).
+- Последний опубликованный MVP-коммит: `2ce117a` (`Build first online Asteroids slice`).
 - Основной файл правил: `C:\PetProjects\Astro-game\AGENTS.md`.
 - Safety-kit: `C:\PetProjects\Astro-game\.agent-io-safety`.
 - История: `C:\PetProjects\Astro-game\.agent\history.md`.
@@ -53,3 +54,4 @@
 - Документация продукта: `C:\PetProjects\Astro-game\README.md`, `C:\PetProjects\Astro-game\docs`.
 - Первый рабочий стек: npm workspaces, TypeScript, Vite, Canvas 2D, Node.js, `ws`.
 - Проверки MVP: `npm.cmd run check`, `npm.cmd run build`, `npm.cmd run smoke:ws`.
+- Локальный dev-сервер сейчас рассчитан на клиент `http://localhost:5174` и WebSocket `ws://localhost:8787`.
