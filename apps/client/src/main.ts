@@ -1,8 +1,10 @@
 import {
+  SHIP_ROTATION_SPEED,
   encodeMessage,
   type GameSnapshot,
   type PlayerInput,
   type ScoreboardEntry,
+  type Vector2,
   type ServerMessage,
   type WorldConfig
 } from "@astro-game/shared";
@@ -17,12 +19,20 @@ interface ClientState {
   nickname: string;
   world: WorldConfig;
   snapshot: GameSnapshot | undefined;
+  snapshotReceivedAt: number;
+  camera: Vector2 | undefined;
   input: PlayerInput;
   inputSeq: number;
   lastPongMs: number;
   showDebug: boolean;
   lastFrameAt: number;
   fps: number;
+  hudHtml: string;
+  debugText: string;
+  instrumentsKey: string;
+  lastHudRenderAt: number;
+  lastInstrumentRenderAt: number;
+  connectAttempt: number;
 }
 
 interface TouchJoystickState {
@@ -48,6 +58,8 @@ const state: ClientState = {
   nickname: "",
   world: defaultWorld,
   snapshot: undefined,
+  snapshotReceivedAt: 0,
+  camera: undefined,
   input: {
     left: false,
     right: false,
@@ -58,7 +70,13 @@ const state: ClientState = {
   lastPongMs: 0,
   showDebug: true,
   lastFrameAt: performance.now(),
-  fps: 0
+  fps: 0,
+  hudHtml: "",
+  debugText: "",
+  instrumentsKey: "",
+  lastHudRenderAt: 0,
+  lastInstrumentRenderAt: 0,
+  connectAttempt: 0
 };
 
 const appCandidate = document.querySelector<HTMLDivElement>("#app");
@@ -84,6 +102,17 @@ app.innerHTML = `
       </form>
     </section>
     <aside class="hud"></aside>
+    <aside class="instruments is-hidden">
+      <div class="instrument">
+        <span>Скорость</span>
+        <strong class="speed-value">0</strong>
+      </div>
+      <div class="instrument compass">
+        <span>Курс</span>
+        <strong class="course-value">С 0°</strong>
+        <i class="compass-needle"></i>
+      </div>
+    </aside>
     <pre class="debug"></pre>
     <div class="touch-controls">
       <div class="touch-joystick">
@@ -100,6 +129,10 @@ const form = mustQuery<HTMLFormElement>("form");
 const joinPanel = mustQuery<HTMLElement>(".join-panel");
 const statusLine = mustQuery<HTMLElement>(".status-line");
 const hud = mustQuery<HTMLElement>(".hud");
+const instruments = mustQuery<HTMLElement>(".instruments");
+const speedValue = mustQuery<HTMLElement>(".speed-value");
+const courseValue = mustQuery<HTMLElement>(".course-value");
+const compassNeedle = mustQuery<HTMLElement>(".compass-needle");
 const debug = mustQuery<HTMLElement>(".debug");
 const touchControls = mustQuery<HTMLElement>(".touch-controls");
 const touchJoystick = mustQuery<HTMLElement>(".touch-joystick");
@@ -135,6 +168,12 @@ function mustQuery<T extends Element>(selector: string): T {
   const element = app.querySelector<T>(selector);
   if (!element) throw new Error(`Missing UI element: ${selector}`);
   return element;
+}
+
+function setStatus(message: string, tone: "info" | "error" = "info"): void {
+  statusLine.textContent = message;
+  statusLine.classList.toggle("is-error", tone === "error");
+  statusLine.classList.toggle("is-info", tone === "info");
 }
 
 form.addEventListener("submit", (event) => {
@@ -242,44 +281,50 @@ setInterval(() => {
 
 function connect(nickname: string, roomId: string): void {
   const serverUrl = resolveWebSocketUrl(roomId);
+  const previousSocket = state.socket;
+  const attempt = state.connectAttempt + 1;
 
-  state.socket?.close();
+  state.socket = undefined;
+  previousSocket?.close();
+  state.connectAttempt = attempt;
   state.connected = false;
   state.joined = false;
   state.nickname = nickname;
   state.roomId = roomId;
   state.snapshot = undefined;
-  statusLine.textContent = `Подключение к ${serverUrl}`;
+  state.snapshotReceivedAt = 0;
+  state.camera = undefined;
+  setStatus(`Подключение к ${serverUrl}`, "info");
 
   const socket = new WebSocket(serverUrl);
   state.socket = socket;
 
   socket.addEventListener("open", () => {
-    if (state.socket !== socket) return;
+    if (state.socket !== socket || state.connectAttempt !== attempt) return;
     state.connected = true;
     socket.send(encodeMessage({ type: "joinRoom", nickname, roomId }));
   });
 
   socket.addEventListener("message", (event) => {
-    if (state.socket !== socket) return;
+    if (state.socket !== socket || state.connectAttempt !== attempt) return;
     const message = parseServerMessage(event.data);
     if (!message) return;
     handleServerMessage(message);
   });
 
   socket.addEventListener("close", () => {
-    if (state.socket !== socket) return;
+    if (state.socket !== socket || state.connectAttempt !== attempt) return;
     const wasJoined = state.joined;
     state.connected = false;
     state.joined = false;
-    statusLine.textContent = wasJoined ? "Соединение закрыто" : "Не удалось подключиться к серверу";
+    setStatus(wasJoined ? "Соединение закрыто" : "Не удалось подключиться к серверу", wasJoined ? "info" : "error");
     joinPanel.style.display = "grid";
     gameShell.classList.remove("is-playing");
     resetTouchInput();
   });
 
   socket.addEventListener("error", () => {
-    if (state.socket !== socket || state.joined) return;
+    if (state.socket !== socket || state.connectAttempt !== attempt || state.joined) return;
   });
 }
 
@@ -303,6 +348,8 @@ function handleServerMessage(message: ServerMessage): void {
     state.playerId = message.playerId;
     state.roomId = message.roomId;
     state.world = message.world;
+    state.camera = undefined;
+    setStatus("", "info");
     joinPanel.style.display = "none";
     gameShell.classList.add("is-playing");
     return;
@@ -310,6 +357,7 @@ function handleServerMessage(message: ServerMessage): void {
 
   if (message.type === "snapshot") {
     state.snapshot = message.snapshot;
+    state.snapshotReceivedAt = performance.now();
     return;
   }
 
@@ -319,7 +367,7 @@ function handleServerMessage(message: ServerMessage): void {
   }
 
   if (message.type === "error") {
-    statusLine.textContent = message.message;
+    setStatus(message.message, "error");
   }
 }
 
@@ -423,12 +471,13 @@ function frame(now: number): void {
   const delta = now - state.lastFrameAt;
   state.lastFrameAt = now;
   state.fps = state.fps * 0.9 + (1_000 / Math.max(1, delta)) * 0.1;
-  draw();
-  renderHud();
+  draw(now, delta);
+  renderHud(now);
+  renderInstruments(now);
   requestAnimationFrame(frame);
 }
 
-function draw(): void {
+function draw(now: number, deltaMs: number): void {
   const ratio = window.devicePixelRatio || 1;
   const width = canvas.width;
   const height = canvas.height;
@@ -441,15 +490,22 @@ function draw(): void {
   drawBackground(viewWidth, viewHeight);
 
   const snapshot = state.snapshot;
-  const self = snapshot?.players.find((player) => player.id === state.playerId);
-    const camera = self?.position ?? { x: state.world.width / 2, y: state.world.height / 2 };
+  const predictionSeconds = getPredictionSeconds(now);
+  const players = snapshot?.players.map((player) => predictPlayer(player, predictionSeconds)) ?? [];
+  const self = players.find((player) => player.id === state.playerId);
+  const cameraTarget = self?.position ?? { x: state.world.width / 2, y: state.world.height / 2 };
+  const camera = getSmoothedCamera(cameraTarget, deltaMs);
 
   if (snapshot) {
     drawWorldGrid(camera, viewWidth, viewHeight);
-    for (const asteroid of snapshot.asteroids) drawAsteroid(camera, asteroid.position, asteroid.radius, asteroid.id);
-    for (const projectile of snapshot.projectiles) drawProjectile(camera, projectile.position);
-    for (const player of snapshot.players) drawShip(camera, player, player.id === state.playerId);
-    for (const player of snapshot.players) {
+    for (const asteroid of snapshot.asteroids) {
+      drawAsteroid(camera, predictPosition(asteroid.position, asteroid.velocity, predictionSeconds), asteroid.radius, asteroid.id);
+    }
+    for (const projectile of snapshot.projectiles) {
+      drawProjectile(camera, predictPosition(projectile.position, projectile.velocity, predictionSeconds));
+    }
+    for (const player of players) drawShip(camera, player, player.id === state.playerId);
+    for (const player of players) {
       if (player.id !== state.playerId) drawPlayerIndicator(camera, player, viewWidth, viewHeight);
     }
   } else {
@@ -463,17 +519,74 @@ function worldToScreen(camera: { x: number; y: number }, position: { x: number; 
   const ratio = window.devicePixelRatio || 1;
   const viewWidth = canvas.width / ratio;
   const viewHeight = canvas.height / ratio;
-  const zoom = getWorldZoom();
+  const zoom = getCameraZoom();
   return {
     x: (position.x - camera.x) * zoom + viewWidth / 2,
     y: (position.y - camera.y) * zoom + viewHeight / 2
   };
 }
 
-function getWorldZoom(): number {
-  const touchLike = window.matchMedia("(hover: none), (pointer: coarse)").matches || navigator.maxTouchPoints > 0;
-  const narrowSide = Math.min(window.innerWidth, window.innerHeight);
-  return touchLike && narrowSide <= 720 ? 1.35 : 1;
+function getCameraZoom(): number {
+  if (!isTouchLikeScreen()) return 1;
+
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const narrowSide = Math.min(width, height);
+  if (narrowSide > 720) return 1;
+
+  return width > height ? 0.68 : 0.82;
+}
+
+function isTouchLikeScreen(): boolean {
+  return window.matchMedia("(hover: none), (pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+}
+
+function getPredictionSeconds(now: number): number {
+  if (!state.snapshotReceivedAt) return 0;
+  return Math.min(0.08, Math.max(0, (now - state.snapshotReceivedAt) / 1_000));
+}
+
+function predictPlayer(player: GameSnapshot["players"][number], seconds: number): GameSnapshot["players"][number] {
+  let rotation = player.rotation;
+  if (player.id === state.playerId) {
+    if (state.input.left) rotation -= SHIP_ROTATION_SPEED * seconds;
+    if (state.input.right) rotation += SHIP_ROTATION_SPEED * seconds;
+  }
+
+  return {
+    ...player,
+    position: predictPosition(player.position, player.velocity, seconds),
+    rotation
+  };
+}
+
+function predictPosition(position: Vector2, velocity: Vector2, seconds: number): Vector2 {
+  if (seconds <= 0) return position;
+  return {
+    x: position.x + velocity.x * seconds,
+    y: position.y + velocity.y * seconds
+  };
+}
+
+function getSmoothedCamera(target: Vector2, deltaMs: number): Vector2 {
+  if (!state.camera) {
+    state.camera = { ...target };
+    return state.camera;
+  }
+
+  const dx = target.x - state.camera.x;
+  const dy = target.y - state.camera.y;
+  if (Math.hypot(dx, dy) > 1_200) {
+    state.camera = { ...target };
+    return state.camera;
+  }
+
+  const alpha = 1 - Math.exp(-deltaMs / 90);
+  state.camera = {
+    x: state.camera.x + dx * alpha,
+    y: state.camera.y + dy * alpha
+  };
+  return state.camera;
 }
 
 function drawBackground(width: number, height: number): void {
@@ -493,7 +606,7 @@ function drawWorldGrid(camera: { x: number; y: number }, width: number, height: 
   ctx.strokeStyle = "rgba(129, 174, 213, 0.11)";
   ctx.lineWidth = 1;
   const grid = 500;
-  const zoom = getWorldZoom();
+  const zoom = getCameraZoom();
   const worldWidth = width / zoom;
   const worldHeight = height / zoom;
   const left = camera.x - worldWidth / 2;
@@ -527,7 +640,7 @@ function drawShip(
   ctx.save();
   ctx.translate(screen.x, screen.y);
   ctx.rotate(player.rotation);
-  const zoom = getWorldZoom();
+  const zoom = getCameraZoom();
   ctx.scale(zoom, zoom);
   ctx.globalAlpha = player.alive ? 1 : 0.35;
   if (player.thrusting && player.alive) {
@@ -635,7 +748,7 @@ function edgePoint(
 
 function drawAsteroid(camera: { x: number; y: number }, position: { x: number; y: number }, radius: number, id: string) {
   const screen = worldToScreen(camera, position);
-  const points = asteroidPoints(id, radius * getWorldZoom());
+  const points = asteroidPoints(id, radius * getCameraZoom());
   ctx.strokeStyle = "#c7b9a0";
   ctx.fillStyle = "rgba(168, 149, 119, 0.18)";
   ctx.lineWidth = 2;
@@ -653,7 +766,7 @@ function drawAsteroid(camera: { x: number; y: number }, position: { x: number; y
 
 function drawProjectile(camera: { x: number; y: number }, position: { x: number; y: number }): void {
   const screen = worldToScreen(camera, position);
-  const zoom = getWorldZoom();
+  const zoom = getCameraZoom();
   ctx.fillStyle = "#ffec7a";
   ctx.beginPath();
   ctx.arc(screen.x, screen.y, 3 * zoom, 0, Math.PI * 2);
@@ -667,22 +780,30 @@ function drawWaiting(width: number, height: number): void {
   ctx.fillText("Подключись к комнате, чтобы начать", width / 2, height / 2);
 }
 
-function renderHud(): void {
+function renderHud(now: number): void {
+  if (now - state.lastHudRenderAt < 120) return;
+  state.lastHudRenderAt = now;
+
   const snapshot = state.snapshot;
   const self = snapshot?.players.find((player) => player.id === state.playerId);
   const scoreboard = snapshot?.scoreboard ?? [];
 
-  hud.innerHTML = `
+  const nextHudHtml = `
     <div class="hud-row"><span>Комната</span><strong>${escapeHtml(state.roomId)}</strong></div>
     <div class="hud-row"><span>Статус</span><strong>${state.connected ? "online" : "offline"}</strong></div>
     <div class="hud-row"><span>Здоровье</span><strong>${self ? Math.max(0, Math.round(self.health)) : "-"}</strong></div>
     <div class="hud-row"><span>Очки</span><strong>${self ? self.score : "-"}</strong></div>
     <div class="scoreboard">${renderScoreboard(scoreboard)}</div>
   `;
+  if (nextHudHtml !== state.hudHtml) {
+    hud.innerHTML = nextHudHtml;
+    state.hudHtml = nextHudHtml;
+  }
 
-  debug.style.display = state.showDebug ? "block" : "none";
-  if (state.showDebug) {
-    debug.textContent = [
+  const showDebug = state.showDebug && !isTouchLikeScreen();
+  debug.style.display = showDebug ? "block" : "none";
+  if (showDebug) {
+    const nextDebugText = [
       `fps: ${Math.round(state.fps)}`,
       `ping: ${Math.round(state.lastPongMs)}ms`,
       `tick: ${snapshot?.tick ?? "-"}`,
@@ -691,7 +812,44 @@ function renderHud(): void {
       `projectiles: ${snapshot?.projectiles.length ?? 0}`,
       `server: ${state.socket?.url ?? "-"}`
     ].join("\n");
+    if (nextDebugText !== state.debugText) {
+      debug.textContent = nextDebugText;
+      state.debugText = nextDebugText;
+    }
+  } else if (state.debugText) {
+    debug.textContent = "";
+    state.debugText = "";
   }
+}
+
+function renderInstruments(now: number): void {
+  if (now - state.lastInstrumentRenderAt < 80) return;
+  state.lastInstrumentRenderAt = now;
+
+  const self = state.snapshot?.players.find((player) => player.id === state.playerId);
+  instruments.classList.toggle("is-hidden", !self);
+  if (!self) return;
+
+  const speed = Math.round(Math.hypot(self.velocity.x, self.velocity.y));
+  const heading = getHeading(self.rotation);
+  const nextKey = `${speed}|${heading.label}|${heading.degrees}`;
+  if (nextKey !== state.instrumentsKey) {
+    speedValue.textContent = String(speed);
+    courseValue.textContent = `${heading.label} ${heading.degrees}°`;
+    compassNeedle.style.transform = `rotate(${heading.degrees}deg)`;
+    state.instrumentsKey = nextKey;
+  }
+}
+
+function getHeading(rotation: number): { degrees: number; label: string } {
+  const degrees = Math.round(normalizeDegrees(90 + (rotation * 180) / Math.PI));
+  const labels = ["С", "СВ", "В", "ЮВ", "Ю", "ЮЗ", "З", "СЗ"];
+  const label = labels[Math.round(degrees / 45) % labels.length] ?? "С";
+  return { degrees, label };
+}
+
+function normalizeDegrees(value: number): number {
+  return ((value % 360) + 360) % 360;
 }
 
 function renderScoreboard(scoreboard: ScoreboardEntry[]): string {

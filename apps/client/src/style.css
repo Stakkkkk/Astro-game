@@ -42,12 +42,14 @@ canvas {
   display: block;
   width: 100%;
   height: 100%;
+  contain: strict;
   touch-action: none;
 }
 
 .join-panel {
   position: absolute;
   inset: 0;
+  z-index: 10;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -113,14 +115,23 @@ canvas {
 
 .status-line {
   min-height: 20px;
-  color: #ffb5a5;
+  color: #b9c4d6;
   font-size: 13px;
+}
+
+.status-line.is-error {
+  color: #ffb5a5;
+}
+
+.status-line.is-info {
+  color: #b9c4d6;
 }
 
 .hud {
   position: absolute;
   top: 14px;
   left: 14px;
+  z-index: 3;
   display: grid;
   gap: 8px;
   min-width: 230px;
@@ -130,6 +141,73 @@ canvas {
   background: rgb(9 12 18 / 72%);
   backdrop-filter: blur(10px);
   pointer-events: none;
+}
+
+.instruments {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.instruments.is-hidden {
+  display: none;
+}
+
+.instrument {
+  min-width: 86px;
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 8px;
+  background: rgb(9 12 18 / 72%);
+  color: #cbd6e8;
+  backdrop-filter: blur(10px);
+}
+
+.instrument span {
+  font-size: 11px;
+}
+
+.instrument strong {
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.compass {
+  position: relative;
+  min-width: 102px;
+  padding-right: 42px;
+}
+
+.compass-needle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  transform-origin: 50% 50%;
+}
+
+.compass-needle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-right: 6px solid transparent;
+  border-bottom: 22px solid #d8f063;
+  border-left: 6px solid transparent;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 8px rgb(216 240 99 / 46%));
 }
 
 .hud-row {
@@ -209,6 +287,7 @@ canvas {
   padding: 0 max(22px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom))
     max(22px, env(safe-area-inset-left));
   pointer-events: none;
+  contain: layout paint;
 }
 
 .touch-joystick,
@@ -336,6 +415,40 @@ canvas {
   .score-row {
     font-size: 12px;
   }
+
+  .instruments {
+    top: auto;
+    right: 10px;
+    bottom: max(148px, calc(env(safe-area-inset-bottom) + 148px));
+    gap: 6px;
+  }
+
+  .instrument {
+    min-width: 74px;
+    padding: 7px 8px;
+  }
+
+  .instrument strong {
+    font-size: 13px;
+  }
+
+  .compass {
+    min-width: 90px;
+    padding-right: 34px;
+  }
+
+  .compass-needle {
+    right: 9px;
+    width: 19px;
+    height: 19px;
+    margin-top: -9px;
+  }
+
+  .compass-needle::before {
+    border-right-width: 5px;
+    border-bottom-width: 19px;
+    border-left-width: 5px;
+  }
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -343,8 +456,53 @@ canvas {
     display: flex;
   }
 
+  .hud,
+  .instrument,
+  .touch-joystick,
+  .touch-fire {
+    backdrop-filter: none;
+  }
+
   .debug {
     display: none !important;
+  }
+}
+
+@media (hover: none) and (orientation: landscape), (pointer: coarse) and (orientation: landscape) {
+  .hud {
+    top: 8px;
+    left: 8px;
+    min-width: 0;
+    width: 224px;
+    padding: 8px;
+    gap: 5px;
+  }
+
+  .hud-row {
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .hud-row strong {
+    font-size: 12px;
+  }
+
+  .scoreboard {
+    gap: 3px;
+    margin-top: 0;
+    padding-top: 5px;
+    max-height: 42px;
+    overflow: hidden;
+  }
+
+  .score-row {
+    font-size: 12px;
+  }
+
+  .instruments {
+    top: 8px;
+    right: 8px;
+    bottom: auto;
   }
 }
 

@@ -43,7 +43,29 @@
 - `npm.cmd run smoke:ws`
 - `npm.cmd run smoke:worker`
 - `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
+- Обычный `/` на preview вернул новый HTML с `/assets/index-D3haDGmw.js` и `/assets/index-T_jwM9eI.css`, заголовок `Cache-Control: no-store, max-age=0`.
+- `https://astro-game-worker.spangle-roarer.workers.dev/health` вернул `ok`.
+- Удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.spangle-roarer.workers.dev/ws` прошел со второй попытки; первая попытка сразу после deploy поймала timeout на прогреве.
+- `npm.cmd run smoke:worker`
+- `npx.cmd wrangler deploy --config apps/worker/wrangler.jsonc --temporary`
 - удаленный smoke через `SMOKE_WS_URL=wss://astro-game-worker.spangle-roarer.workers.dev/ws`
+
+## Обновление 2026-07-04 14:17:09 +07:00
+
+- По повторному скриншоту выяснилось, что предыдущая правка масштаба была сделана в неверную сторону: mobile world zoom `1.35` раздувал корабли, астероиды и сетку.
+- Для touch-экранов камера теперь отъезжает: `0.68` в landscape и `0.82` в portrait, чтобы на телефоне было видно больше пространства.
+- Добавлены приборы полета: скорость и курс/компас.
+- Убрана лишняя перерисовка HUD на каждом animation frame; HUD и debug обновляются только при изменении/с периодическим throttle.
+- Для рендера добавлено легкое client-side extrapolation по velocity и сглаживание камеры, чтобы движение не дергалось строго по серверным тикам.
+- Статус подключения разделен на информационный и ошибочный; старый сокет при новом подключении отвязывается до `close`, чтобы не мигать ложной ошибкой.
+- На touch-устройствах отключен тяжелый `backdrop-filter` у игровых overlay, чтобы снизить лаги в мобильном браузере.
+- Worker теперь отдает HTML с `Cache-Control: no-store` и внутренним cache-buster для static assets, потому что обычный `/` после deploy мог возвращать старый `index.html`.
+
+Проверки:
+
+- `npm.cmd run check`
+- `npm.cmd run build`
+- `npm.cmd run smoke:ws`
 
 ## Обновление 2026-07-04 14:05:05 +07:00
 

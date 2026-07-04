@@ -19,8 +19,10 @@ export interface Env {
   ASSETS: Fetcher;
 }
 
+const HTML_ASSET_VERSION = "2026-07-04-mobile-scale";
+
 export default {
-  fetch(request: Request, env: Env): Response | Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === "/health") {
@@ -37,9 +39,34 @@ export default {
       return env.GAME_ROOM.get(id).fetch(request);
     }
 
-    return env.ASSETS.fetch(request);
+    return fetchStaticAsset(request, env);
   }
 } satisfies ExportedHandler<Env>;
+
+async function fetchStaticAsset(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const isHtmlRequest =
+    request.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html" || url.pathname.endsWith(".html"));
+
+  const assetRequest = isHtmlRequest ? withHtmlCacheBuster(request, url) : request;
+  const response = await env.ASSETS.fetch(assetRequest);
+  if (!isHtmlRequest) return response;
+
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store, max-age=0");
+  headers.set("pragma", "no-cache");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
+}
+
+function withHtmlCacheBuster(request: Request, url: URL): Request {
+  const assetUrl = new URL(url);
+  assetUrl.searchParams.set("__astro_build", HTML_ASSET_VERSION);
+  return new Request(assetUrl, request);
+}
 
 export class GameRoom extends DurableObject<Env> {
   private readonly engine: RoomEngine;
