@@ -61,6 +61,8 @@
 - История: `C:\PetProjects\Astro-game\.agent\history.md`.
 - Кейс: `C:\PetProjects\Astro-game\.agent\case_non_it_game.md`.
 - Заметка к кейсу про публичный веб: `C:\PetProjects\Astro-game\.agent\case_public_web_note.md`.
+- Заметка по тач-управлению: `C:\PetProjects\Astro-game\.agent\touch_controls_note.md`.
+- Заметка к кейсу про тач-управление: `C:\PetProjects\Astro-game\.agent\case_touch_controls_note.md`.
 - Контекст: `C:\PetProjects\Astro-game\.agent\context.md`.
 - Adaptive score: `C:\PetProjects\Astro-game\.agent\agent_score.md`.
 - Правила субагентов: `C:\PetProjects\Astro-game\.agent\subagents`.

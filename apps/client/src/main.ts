@@ -25,6 +25,12 @@ interface ClientState {
   fps: number;
 }
 
+interface TouchJoystickState {
+  pointerId: number | undefined;
+  centerX: number;
+  centerY: number;
+}
+
 const defaultWorld: WorldConfig = {
   width: 5_000,
   height: 5_000,
@@ -77,20 +83,49 @@ app.innerHTML = `
     </section>
     <aside class="hud"></aside>
     <pre class="debug"></pre>
+    <div class="touch-controls">
+      <div class="touch-joystick">
+        <div class="touch-joystick-knob"></div>
+      </div>
+      <button class="touch-fire" type="button" aria-label="Shoot"></button>
+    </div>
   </main>
 `;
 
+const gameShell = mustQuery<HTMLElement>(".game-shell");
 const canvas = mustQuery<HTMLCanvasElement>("canvas");
 const form = mustQuery<HTMLFormElement>("form");
 const joinPanel = mustQuery<HTMLElement>(".join-panel");
 const statusLine = mustQuery<HTMLElement>(".status-line");
 const hud = mustQuery<HTMLElement>(".hud");
 const debug = mustQuery<HTMLElement>(".debug");
+const touchControls = mustQuery<HTMLElement>(".touch-controls");
+const touchJoystick = mustQuery<HTMLElement>(".touch-joystick");
+const touchJoystickKnob = mustQuery<HTMLElement>(".touch-joystick-knob");
+const touchFire = mustQuery<HTMLButtonElement>(".touch-fire");
 const contextValue = canvas.getContext("2d");
 if (!contextValue) throw new Error("Canvas 2D context is unavailable");
 const ctx: CanvasRenderingContext2D = contextValue;
 
 const keys = new Set<string>();
+const keyboardInput: PlayerInput = {
+  left: false,
+  right: false,
+  thrust: false,
+  shoot: false
+};
+const touchInput: PlayerInput = {
+  left: false,
+  right: false,
+  thrust: false,
+  shoot: false
+};
+const joystick: TouchJoystickState = {
+  pointerId: undefined,
+  centerX: 0,
+  centerY: 0
+};
+const firePointers = new Set<number>();
 
 function mustQuery<T extends Element>(selector: string): T {
   const element = app.querySelector<T>(selector);
@@ -115,12 +150,68 @@ window.addEventListener("keydown", (event) => {
     event.preventDefault();
   }
   keys.add(event.code);
-  updateInputFromKeys();
+  updateKeyboardInput();
 });
 
 window.addEventListener("keyup", (event) => {
   keys.delete(event.code);
-  updateInputFromKeys();
+  updateKeyboardInput();
+});
+
+window.addEventListener("blur", () => {
+  keys.clear();
+  resetTouchInput();
+  updateKeyboardInput();
+});
+
+touchJoystick.addEventListener("pointerdown", (event) => {
+  if (joystick.pointerId !== undefined) return;
+  event.preventDefault();
+  joystick.pointerId = event.pointerId;
+  const rect = touchJoystick.getBoundingClientRect();
+  joystick.centerX = rect.left + rect.width / 2;
+  joystick.centerY = rect.top + rect.height / 2;
+  touchJoystick.setPointerCapture(event.pointerId);
+  touchJoystick.classList.add("is-active");
+  updateTouchJoystick(event);
+});
+
+touchJoystick.addEventListener("pointermove", (event) => {
+  if (event.pointerId !== joystick.pointerId) return;
+  event.preventDefault();
+  updateTouchJoystick(event);
+});
+
+for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"] as const) {
+  touchJoystick.addEventListener(eventName, (event) => {
+    if (event.pointerId !== joystick.pointerId) return;
+    event.preventDefault();
+    resetJoystick();
+  });
+}
+
+touchFire.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  firePointers.add(event.pointerId);
+  touchFire.setPointerCapture(event.pointerId);
+  touchFire.classList.add("is-active");
+  touchInput.shoot = true;
+  syncInput();
+});
+
+for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"] as const) {
+  touchFire.addEventListener(eventName, (event) => {
+    if (!firePointers.has(event.pointerId)) return;
+    event.preventDefault();
+    firePointers.delete(event.pointerId);
+    touchInput.shoot = firePointers.size > 0;
+    touchFire.classList.toggle("is-active", touchInput.shoot);
+    syncInput();
+  });
+}
+
+touchControls.addEventListener("contextmenu", (event) => {
+  event.preventDefault();
 });
 
 window.addEventListener("resize", resizeCanvas);
@@ -174,6 +265,8 @@ function connect(nickname: string, roomId: string): void {
     state.joined = false;
     statusLine.textContent = "Соединение закрыто";
     joinPanel.style.display = "grid";
+    gameShell.classList.remove("is-playing");
+    resetTouchInput();
   });
 
   socket.addEventListener("error", () => {
@@ -202,6 +295,7 @@ function handleServerMessage(message: ServerMessage): void {
     state.roomId = message.roomId;
     state.world = message.world;
     joinPanel.style.display = "none";
+    gameShell.classList.add("is-playing");
     return;
   }
 
@@ -233,13 +327,56 @@ function parseServerMessage(data: unknown): ServerMessage | undefined {
   }
 }
 
-function updateInputFromKeys(): void {
+function updateKeyboardInput(): void {
+  keyboardInput.left = keys.has("KeyA") || keys.has("ArrowLeft");
+  keyboardInput.right = keys.has("KeyD") || keys.has("ArrowRight");
+  keyboardInput.thrust = keys.has("KeyW") || keys.has("ArrowUp");
+  keyboardInput.shoot = keys.has("Space");
+  syncInput();
+}
+
+function syncInput(): void {
   state.input = {
-    left: keys.has("KeyA") || keys.has("ArrowLeft"),
-    right: keys.has("KeyD") || keys.has("ArrowRight"),
-    thrust: keys.has("KeyW") || keys.has("ArrowUp"),
-    shoot: keys.has("Space")
+    left: keyboardInput.left || touchInput.left,
+    right: keyboardInput.right || touchInput.right,
+    thrust: keyboardInput.thrust || touchInput.thrust,
+    shoot: keyboardInput.shoot || touchInput.shoot
   };
+}
+
+function updateTouchJoystick(event: PointerEvent): void {
+  const radius = Math.max(36, touchJoystick.clientWidth * 0.34);
+  const rawX = event.clientX - joystick.centerX;
+  const rawY = event.clientY - joystick.centerY;
+  const distanceValue = Math.hypot(rawX, rawY);
+  const limit = distanceValue > radius ? radius / distanceValue : 1;
+  const x = rawX * limit;
+  const y = rawY * limit;
+  const normalizedX = x / radius;
+  const normalizedY = y / radius;
+
+  touchJoystickKnob.style.transform = `translate(${x}px, ${y}px)`;
+  touchInput.left = normalizedX < -0.22;
+  touchInput.right = normalizedX > 0.22;
+  touchInput.thrust = normalizedY < -0.18;
+  syncInput();
+}
+
+function resetJoystick(): void {
+  joystick.pointerId = undefined;
+  touchJoystick.classList.remove("is-active");
+  touchJoystickKnob.style.transform = "translate(0, 0)";
+  touchInput.left = false;
+  touchInput.right = false;
+  touchInput.thrust = false;
+  syncInput();
+}
+
+function resetTouchInput(): void {
+  firePointers.clear();
+  touchFire.classList.remove("is-active");
+  touchInput.shoot = false;
+  resetJoystick();
 }
 
 function resizeCanvas(): void {

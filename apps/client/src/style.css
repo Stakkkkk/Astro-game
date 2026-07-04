@@ -39,6 +39,7 @@ canvas {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 .join-panel {
@@ -193,9 +194,156 @@ canvas {
   pointer-events: none;
 }
 
+.touch-controls {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  display: none;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 max(22px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom))
+    max(22px, env(safe-area-inset-left));
+  pointer-events: none;
+}
+
+.touch-joystick,
+.touch-fire {
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-joystick {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 50%;
+  background: rgb(9 12 18 / 48%);
+  box-shadow:
+    inset 0 0 28px rgb(120 199 255 / 14%),
+    0 16px 42px rgb(0 0 0 / 28%);
+  backdrop-filter: blur(10px);
+}
+
+.touch-joystick::before,
+.touch-joystick::after {
+  content: "";
+  position: absolute;
+  background: rgb(255 255 255 / 14%);
+}
+
+.touch-joystick::before {
+  top: 50%;
+  left: 18px;
+  width: calc(100% - 36px);
+  height: 1px;
+}
+
+.touch-joystick::after {
+  top: 18px;
+  left: 50%;
+  width: 1px;
+  height: calc(100% - 36px);
+}
+
+.touch-joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border: 1px solid rgb(255 255 255 / 32%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 32%, rgb(255 255 255 / 30%), transparent 28%),
+    rgb(120 199 255 / 34%);
+  box-shadow:
+    0 0 24px rgb(120 199 255 / 24%),
+    0 10px 24px rgb(0 0 0 / 30%);
+  transform: translate(0, 0);
+  transition: transform 120ms ease-out;
+}
+
+.touch-joystick.is-active .touch-joystick-knob {
+  transition: none;
+}
+
+.touch-fire {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgb(255 236 122 / 42%) 0 24%, rgb(255 139 107 / 18%) 25% 52%, transparent 53%),
+    rgb(9 12 18 / 54%);
+  box-shadow:
+    inset 0 0 28px rgb(255 139 107 / 18%),
+    0 16px 42px rgb(0 0 0 / 28%);
+  backdrop-filter: blur(10px);
+}
+
+.touch-fire::before {
+  content: "";
+  position: absolute;
+  inset: 28px;
+  border-radius: 50%;
+  background: #ffec7a;
+  box-shadow: 0 0 22px rgb(255 236 122 / 70%);
+}
+
+.touch-fire.is-active {
+  transform: scale(0.94);
+  border-color: rgb(255 236 122 / 58%);
+}
+
 @media (max-width: 640px) {
   .hud {
     min-width: 0;
     width: calc(100vw - 28px);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .game-shell.is-playing .touch-controls {
+    display: flex;
+  }
+
+  .debug {
+    display: none !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .touch-controls {
+    padding-right: max(18px, env(safe-area-inset-right));
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    padding-left: max(18px, env(safe-area-inset-left));
+  }
+
+  .touch-joystick {
+    width: 116px;
+    height: 116px;
+  }
+
+  .touch-joystick-knob {
+    width: 48px;
+    height: 48px;
+    margin: -24px 0 0 -24px;
+  }
+
+  .touch-fire {
+    width: 86px;
+    height: 86px;
+  }
+
+  .touch-fire::before {
+    inset: 25px;
   }
 }
