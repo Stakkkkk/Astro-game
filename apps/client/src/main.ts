@@ -29,6 +29,8 @@ interface TouchJoystickState {
   pointerId: number | undefined;
   centerX: number;
   centerY: number;
+  angle: number;
+  strength: number;
 }
 
 const defaultWorld: WorldConfig = {
@@ -123,7 +125,9 @@ const touchInput: PlayerInput = {
 const joystick: TouchJoystickState = {
   pointerId: undefined,
   centerX: 0,
-  centerY: 0
+  centerY: 0,
+  angle: 0,
+  strength: 0
 };
 const firePointers = new Set<number>();
 
@@ -220,6 +224,7 @@ requestAnimationFrame(frame);
 
 setInterval(() => {
   if (!state.socket || state.socket.readyState !== WebSocket.OPEN || !state.joined) return;
+  syncInput();
   state.inputSeq += 1;
   state.socket.send(
     encodeMessage({
@@ -250,17 +255,20 @@ function connect(nickname: string, roomId: string): void {
   state.socket = socket;
 
   socket.addEventListener("open", () => {
+    if (state.socket !== socket) return;
     state.connected = true;
     socket.send(encodeMessage({ type: "joinRoom", nickname, roomId }));
   });
 
   socket.addEventListener("message", (event) => {
+    if (state.socket !== socket) return;
     const message = parseServerMessage(event.data);
     if (!message) return;
     handleServerMessage(message);
   });
 
   socket.addEventListener("close", () => {
+    if (state.socket !== socket) return;
     state.connected = false;
     state.joined = false;
     statusLine.textContent = "Соединение закрыто";
@@ -270,6 +278,7 @@ function connect(nickname: string, roomId: string): void {
   });
 
   socket.addEventListener("error", () => {
+    if (state.socket !== socket || state.joined) return;
     statusLine.textContent = "Не удалось подключиться к серверу";
   });
 }
@@ -336,6 +345,7 @@ function updateKeyboardInput(): void {
 }
 
 function syncInput(): void {
+  updateTouchSteering();
   state.input = {
     left: keyboardInput.left || touchInput.left,
     right: keyboardInput.right || touchInput.right,
@@ -352,18 +362,38 @@ function updateTouchJoystick(event: PointerEvent): void {
   const limit = distanceValue > radius ? radius / distanceValue : 1;
   const x = rawX * limit;
   const y = rawY * limit;
-  const normalizedX = x / radius;
-  const normalizedY = y / radius;
 
   touchJoystickKnob.style.transform = `translate(${x}px, ${y}px)`;
-  touchInput.left = normalizedX < -0.22;
-  touchInput.right = normalizedX > 0.22;
-  touchInput.thrust = normalizedY < -0.18;
+  joystick.angle = Math.atan2(y, x);
+  joystick.strength = Math.min(1, distanceValue / radius);
   syncInput();
+}
+
+function updateTouchSteering(): void {
+  if (joystick.pointerId === undefined || joystick.strength < 0.12) {
+    touchInput.left = false;
+    touchInput.right = false;
+    touchInput.thrust = false;
+    return;
+  }
+
+  const self = state.snapshot?.players.find((player) => player.id === state.playerId);
+  const delta = self ? angularDelta(joystick.angle, self.rotation) : 0;
+  const turnDeadZone = 0.12;
+
+  touchInput.left = delta < -turnDeadZone;
+  touchInput.right = delta > turnDeadZone;
+  touchInput.thrust = joystick.strength > 0.4;
+}
+
+function angularDelta(target: number, current: number): number {
+  return Math.atan2(Math.sin(target - current), Math.cos(target - current));
 }
 
 function resetJoystick(): void {
   joystick.pointerId = undefined;
+  joystick.strength = 0;
+  joystick.angle = 0;
   touchJoystick.classList.remove("is-active");
   touchJoystickKnob.style.transform = "translate(0, 0)";
   touchInput.left = false;
